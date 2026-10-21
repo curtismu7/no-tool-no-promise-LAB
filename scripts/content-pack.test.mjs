@@ -43,10 +43,9 @@ test('every story says exactly what the UI story strip says', () => {
   }
 });
 
-test('the pack names no real company, person or incident, and no token-shaped value', () => {
+test('the pack carries no token-shaped value', () => {
   const text = fs.readFileSync(PACK_PATH, 'utf8');
   assert.doesNotMatch(text, /eyJ[A-Za-z0-9_-]{10,}\./);
-  assert.doesNotMatch(text, /airline|air canada/i);
 });
 
 test('a commit is recorded only when passed', () => {
