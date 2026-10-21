@@ -1,0 +1,192 @@
+{
+  "schema": "demo-content-pack/1",
+  "id": "no-tool-no-promise",
+  "title": "No tool, no promise",
+  "version": "0.1.0",
+  "demo": {
+    "id": "no-tool-no-promise",
+    "name": "No tool, no promise",
+    "catalog": "D31",
+    "baseUrl": "http://localhost:5350",
+    "doctor": "/api/health",
+    "tags": [
+      "agent",
+      "tool-set",
+      "authorization",
+      "commitment"
+    ]
+  },
+  "glossary": [
+    {
+      "id": "approval-required-tool",
+      "term": "Approval-required tool",
+      "definition": "A tool that exists in the agent's set but only creates a pending approval. Nothing is committed until a human decides. In this demo there is no approve step, so it stays pending."
+    },
+    {
+      "id": "audit-log",
+      "term": "Audit log",
+      "definition": "A hash-chained record of every tool call the agent attempted, allowed or denied. Verify checks the chain. Removing entries from the tail leaves a valid shorter chain, so the head hash is what to compare."
+    },
+    {
+      "id": "authorization-boundary",
+      "term": "Authorization boundary",
+      "definition": "The line that decides what an agent may do. Here the boundary is the tool set: a tool outside the agent's own set is denied before it runs."
+    },
+    {
+      "id": "commitment-ledger",
+      "term": "Commitment ledger",
+      "definition": "An append-only, hash-chained list of what the company is actually bound to. It is written only by tool handlers that commit the company, never by chat text or an API route."
+    },
+    {
+      "id": "deny-by-default",
+      "term": "Deny by default",
+      "definition": "An unknown agent, an unknown tool and a tool outside the agent's set are all refused. Names match exactly, so look-alike, padded or hidden-character names are unknown."
+    },
+    {
+      "id": "handoff-to-human",
+      "term": "Handoff to a human",
+      "definition": "The governed agent's way to act on a request it cannot grant: it creates a review request for a person. The request grants and promises nothing."
+    },
+    {
+      "id": "inert-text",
+      "term": "Inert text",
+      "definition": "Every customer or agent string is treated as data: hidden characters are shown as [U+XXXX], secret-looking strings are redacted, sizes are bounded, and the UI renders it as text, never as HTML or instructions."
+    },
+    {
+      "id": "prompt-injection",
+      "term": "Prompt injection",
+      "definition": "A message that tries to give the agent new orders, such as calling a tool it should not use. Against the governed agent it fails because the tool is not in its set, however the request is worded."
+    },
+    {
+      "id": "residual-risk",
+      "term": "Residual risk",
+      "definition": "Reply text can still mislead a customer. A governed agent can say that a fee is gone while the ledger stays empty. The boundary stops the system from binding the company; it does not make the text true. Controlling wording is a separate control that this demo does not provide."
+    },
+    {
+      "id": "scripted-planner",
+      "term": "Scripted planner",
+      "definition": "A small deterministic rule-based stub that turns a customer message into tool calls and reply text. It is not an LLM, so runs repeat exactly. It shows the boundary holds when the planner tries forbidden calls; it does not show how a real model behaves."
+    },
+    {
+      "id": "tool-set",
+      "term": "Tool set",
+      "definition": "The list of tools one agent identity may call. The ungoverned agent's set includes tools that commit the company (waive_fee, issue_refund, change_terms); the governed agent's set has none."
+    },
+    {
+      "id": "unbacked-promise",
+      "term": "Unbacked promise",
+      "definition": "A reply that sounds like a commitment while the ledger has none. The demo flags it with a keyword heuristic over English templates, so a promise phrased another way is not flagged."
+    }
+  ],
+  "sources": [],
+  "cards": [
+    {
+      "id": "approval",
+      "label": "A tool that needs approval",
+      "description": "A goodwill credit exists for both agents but only creates a pending approval.",
+      "group": "try-it",
+      "terms": [
+        "approval-required-tool"
+      ],
+      "story": "S03",
+      "action": {
+        "type": "route",
+        "href": "/"
+      }
+    },
+    {
+      "id": "injection",
+      "label": "Prompt-injected request",
+      "description": "The message orders the agent to call a tool. See it granted for one tool set and denied for the other.",
+      "group": "try-it",
+      "terms": [
+        "prompt-injection",
+        "deny-by-default",
+        "audit-log"
+      ],
+      "story": "S03",
+      "action": {
+        "type": "route",
+        "href": "/"
+      }
+    },
+    {
+      "id": "registry",
+      "label": "Per-agent tool registry",
+      "description": "Which tools each agent identity may call. The commit tools are absent for the governed agent.",
+      "group": "reference",
+      "terms": [
+        "tool-set",
+        "deny-by-default"
+      ],
+      "story": "S03",
+      "action": {
+        "type": "route",
+        "href": "/"
+      }
+    },
+    {
+      "id": "run-both",
+      "label": "Run both tool sets",
+      "description": "Pick a scenario and send the same message to the ungoverned and the governed agent. Compare the ledgers.",
+      "group": "try-it",
+      "terms": [
+        "commitment-ledger",
+        "tool-set",
+        "scripted-planner",
+        "handoff-to-human"
+      ],
+      "story": "S04",
+      "action": {
+        "type": "route",
+        "href": "/"
+      }
+    },
+    {
+      "id": "words-vs-tools",
+      "label": "Words are not commitments, tools are",
+      "description": "What the boundary does and the residual risk: reply text can still mislead a customer.",
+      "group": "concept",
+      "terms": [
+        "residual-risk",
+        "unbacked-promise",
+        "authorization-boundary",
+        "inert-text"
+      ],
+      "story": "S04",
+      "action": {
+        "type": "route",
+        "href": "/"
+      }
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "boundary",
+      "label": "Customer, agent, tool registry boundary, ledger",
+      "href": "/"
+    }
+  ],
+  "stories": [
+    {
+      "id": "S01",
+      "title": "A customer asks",
+      "say": "Waive a fee, refund more than the limit, change a term. Maybe the message even tries to give the agent orders."
+    },
+    {
+      "id": "S02",
+      "title": "The agent plans",
+      "say": "A scripted stub turns the message into tool calls and a reply. No real model, no network, so every run repeats."
+    },
+    {
+      "id": "S03",
+      "title": "The tool set decides",
+      "say": "Each call is checked against that agent's own tool set. Anything not in the set is denied."
+    },
+    {
+      "id": "S04",
+      "title": "The ledger records",
+      "say": "Only a tool can bind the company. What was said and what was committed are kept apart."
+    }
+  ]
+}

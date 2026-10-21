@@ -1,0 +1,6 @@
+[
+  { "id": "S01", "title": "A customer asks", "say": "Waive a fee, refund more than the limit, change a term. Maybe the message even tries to give the agent orders." },
+  { "id": "S02", "title": "The agent plans", "say": "A scripted stub turns the message into tool calls and a reply. No real model, no network, so every run repeats." },
+  { "id": "S03", "title": "The tool set decides", "say": "Each call is checked against that agent's own tool set. Anything not in the set is denied." },
+  { "id": "S04", "title": "The ledger records", "say": "Only a tool can bind the company. What was said and what was committed are kept apart." }
+]
