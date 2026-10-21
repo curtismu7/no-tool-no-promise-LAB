@@ -14,11 +14,12 @@ export class RunError extends Error {
   constructor(code, message, status = 400) { super(message); this.code = code; this.status = status; }
 }
 
-export function createRuntime({ now = () => new Date() } = {}) {
-  assertBoundary();
-  const audit = createChain({ cap: LIMITS.audit, now });
-  const ledger = createLedger({ cap: LIMITS.ledger, now });
-  const queues = { reviews: [], approvals: [], cap: LIMITS.queue };
+// `limits` can be lowered by a test so that each capacity guard can be reached on its own.
+export function createRuntime({ now = () => new Date(), limits = LIMITS, boundaryCheck = assertBoundary } = {}) {
+  boundaryCheck();
+  const audit = createChain({ cap: limits.audit, now });
+  const ledger = createLedger({ cap: limits.ledger, now });
+  const queues = { reviews: [], approvals: [], cap: limits.queue };
   const runs = [];
   const toolbox = createToolbox({ ledger: { commit: ledger.writer.commit, remaining: ledger.reader.remaining }, audit, queues, now });
 
@@ -29,7 +30,7 @@ export function createRuntime({ now = () => new Date() } = {}) {
     if (!agentId) throw new RunError('unknown_profile', `profile must be one of: ${profileNames().join(', ')}`);
     if (typeof wording !== 'string' || !WORDINGS.has(wording)) throw new RunError('bad_wording', 'wording must be careful or loose');
     if (message !== undefined && (typeof message !== 'string' || message.length === 0 || message.length > LIMITS.message)) throw new RunError('bad_message', `message must be 1-${LIMITS.message} characters`);
-    if (runs.length >= LIMITS.runs || audit.remaining() < 30 || ledger.reader.remaining() < 5 || queues.reviews.length >= queues.cap - 5 || queues.approvals.length >= queues.cap - 5) {
+    if (runs.length >= limits.runs || audit.remaining() < 30 || ledger.reader.remaining() < 5 || queues.reviews.length >= queues.cap - 5 || queues.approvals.length >= queues.cap - 5) {
       throw new RunError('capacity', 'the run store is full; POST /api/reset to clear it', 429);
     }
 

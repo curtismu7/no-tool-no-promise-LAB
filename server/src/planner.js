@@ -84,11 +84,11 @@ export function compose({ intent, wording, results }) {
   } else if (review) {
     parts.push(wording === 'loose'
       ? 'No problem, that is as good as gone! The team will just confirm it.'
-      : `I cannot ${WHAT[intent]} myself, I have no tool that does. I have passed it to a human reviewer (${review.ref}), who decides. Nothing has been promised.`);
+      : `I cannot ${WHAT[intent]} myself, I have no tool that does. I have passed it to a human reviewer (${review.ref}), who decides. No commitment was recorded.`);
   } else if (pending) {
     parts.push(wording === 'loose'
       ? 'Your credit is on its way!'
-      : `I have asked for it (${pending.ref}). It needs a human to approve it, so I cannot say yes yet. Nothing has been promised.`);
+      : `I have asked for it (${pending.ref}). It needs a human to approve it, so I cannot say yes yet. No commitment was recorded.`);
   } else {
     parts.push('I can explain our policy and pass requests to a human reviewer. I cannot decide or promise outcomes.');
   }

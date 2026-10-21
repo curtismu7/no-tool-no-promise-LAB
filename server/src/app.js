@@ -84,6 +84,7 @@ export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_
   api.use((err, _req, res, _next) => {
     if (err.type === 'entity.too.large') return res.status(413).json({ error: 'payload_too_large', message: 'request body is too large' });
     if (err.type === 'entity.parse.failed') return bad(res, 'request body is not valid JSON');
+    if (err.type === 'encoding.unsupported') return res.status(415).json({ error: 'unsupported_media_type', message: 'content encoding is not supported' });
     if (err instanceof URIError || err.status === 400) return bad(res, 'malformed request');
     console.error('[no-tool-no-promise] api error:', err.message);
     return res.status(500).json({ error: 'server_error' });

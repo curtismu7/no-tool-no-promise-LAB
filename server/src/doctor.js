@@ -3,7 +3,7 @@
 import { PORT_MAX, PORT_MIN, assertBindAllowed, bindHost, portInRange, serverPort } from './safety.js';
 import { boundaryViolations } from './tools.js';
 
-export function runChecks({ env = process.env } = {}) {
+export function runChecks({ env = process.env, boundary = boundaryViolations } = {}) {
   const checks = [];
   const add = (id, level, detail) => checks.push({ id, level, detail });
 
@@ -16,7 +16,7 @@ export function runChecks({ env = process.env } = {}) {
   const port = serverPort(env);
   add('port-range', portInRange(port) ? 'pass' : 'fail', portInRange(port) ? `server port ${port} (allowed ${PORT_MIN}-${PORT_MAX})` : `server port ${port} is outside ${PORT_MIN}-${PORT_MAX}`);
 
-  const bad = boundaryViolations();
+  const bad = boundary();
   add('boundary', bad.length ? 'fail' : 'pass', bad.length ? `a governed agent holds a commit tool: ${bad.join(', ')}` : 'the governed tool set holds no tool that can commit the company');
 
   add('outbound', 'pass', 'no outbound settings: no LLM, no tenant, no network; the agent is a scripted planner');
