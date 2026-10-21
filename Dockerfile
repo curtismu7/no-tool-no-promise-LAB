@@ -1,5 +1,5 @@
 # Runtime image: the API server plus the built web UI. Mock only: no LLM, no tenant, no network needed.
-# Not yet built or run (docker was not touched in step ND1).
+# Built and run once by hand in step ND2 (OrbStack); no automated test runs the container.
 FROM node:22-alpine AS web
 WORKDIR /app
 COPY package.json package-lock.json ./

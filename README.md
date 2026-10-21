@@ -7,7 +7,7 @@ A support chat agent is asked to waive a fee. If it has a tool that can waive fe
 
 Everything is mock. There is no tenant, no LLM and no network: the "agent" is a small deterministic rule-based planner, so runs are reproducible.
 
-**Status: steps ND0 (server core) and ND1 (web UI).** The UI is served by the server itself. The Docker image has not been built or run. The shelf entry and Learning Hub content pack do not exist yet.
+**Status: steps ND0 (server core) and ND1 (web UI).** The UI is served by the server itself. The Docker image was built and run once (ND2 fix pass: health, UI and a governed run answered on a loopback-only publish); no CI runs it. The shelf entry and Learning Hub content pack do not exist yet.
 
 ## Words are not commitments, tools are
 
@@ -22,7 +22,7 @@ npm run doctor    # preflight, exit 1 on any failure
 npm run build     # builds web/dist, which the server then serves
 npm start         # UI and API at http://127.0.0.1:5350
 npm run dev       # Vite dev server on 5360, proxying /api to 5350
-npm run e2e       # headless Chromium run on 5370 (needs npm run build first)
+npm run e2e       # headless Chromium run on 5370 (needs npm run build first, and a browser: npx playwright install chromium)
 ```
 
 Port 5350 by default (`NTNP_PORT`, must be 5350-5399). The server binds `127.0.0.1` only; `NTNP_BIND` opts in to another address (the container does, and compose publishes on `127.0.0.1` only).
@@ -36,7 +36,7 @@ curl -s localhost:5350/api/ledger
 curl -s localhost:5350/api/audit/verify
 ```
 
-Docker (OrbStack): `docker compose up --build -d` publishes `127.0.0.1:5350` (`HOST_PORT` changes the host side). Not yet built or run in this step.
+Docker (OrbStack): `docker compose up --build -d` publishes `127.0.0.1:5350` (`HOST_PORT` changes the host side). Built and run once under OrbStack with `--read-only --cap-drop ALL` (ND2). The compose file's loopback publish is pinned by `scripts/compose.test.mjs`; the running container is not tested automatically.
 
 ## The UI
 
@@ -66,6 +66,6 @@ Scenarios: `fee-waiver`, `refund-over-limit`, `change-of-terms`, `prompt-injecte
 
 ## Verified
 
-Only what `npm test` and `npm run doctor` show. The server was started and queried with curl on port 5350. `npm run e2e` drives headless Chromium through all five scenarios in both profiles. A Docker build, the shelf entry and the Learning Hub content pack do not exist yet.
+Only what `npm test` and `npm run doctor` show. The server was started and queried with curl on port 5350. `npm run e2e` drives headless Chromium through all five scenarios in both profiles. The Docker image was built and run once by hand. The shelf entry and the Learning Hub content pack do not exist yet.
 
 License: MIT.

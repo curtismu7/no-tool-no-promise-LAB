@@ -24,8 +24,8 @@ This is a mock. It calls no LLM, no tenant and no network. The rules below say w
 | Customer and agent text is inert: hidden and control characters are shown as `[U+XXXX]`, secret-looking strings (JWTs, bearer tokens, `token=...`, URL secrets) are redacted before storage, including a secret split by a hidden character; sizes are bounded. | `server/test/planner.test.js`: "customer text is inert and redacted ...", "hostile tool names are shown inert ...". |
 | The scripted planner is deterministic and the two agents differ only in tool set. | `planner.test.js`. |
 | Ports are 5350-5399 (tests use 5380-5399, found free at run time). | `safety.test.js`, doctor `port-range`. |
-| The container publishes `127.0.0.1` only, with no mounts, docker socket, host network or privilege. | `scripts/compose.test.mjs` (the image has not been built yet). |
-| The checks above are pinned: each is removed from a copy of `src/` and the matching tests must then fail. | `server/test/mutation.test.js` (16 mutations plus an unmutated control). |
+| The container publishes `127.0.0.1` only, with no mounts, docker socket, host network or privilege. | `scripts/compose.test.mjs` (the image was built and run once by hand; no test runs the container). |
+| The checks above are pinned: each is removed from a copy of `src/` and the matching tests must then fail. | `server/test/mutation.test.js` (many mutations, listed in that file, plus an unmutated control; a mutant only counts as killed when a test really fails, not on a timeout or crash). |
 | No real credentials in the repo. | `.githooks/pre-commit` runs gitleaks on staged changes. |
 
 ## What is not covered

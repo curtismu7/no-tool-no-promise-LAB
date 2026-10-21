@@ -43,3 +43,9 @@ test('every API route the README lists exists in app.js, and every scenario it n
   const scen = read('server/src/scenarios.js');
   for (const id of ['fee-waiver', 'refund-over-limit', 'change-of-terms', 'prompt-injected', 'needs-approval']) assert.ok(scen.includes(`'${id}'`));
 });
+
+test('the docs do not say the image was never built, and the README says how to get a browser for e2e', () => {
+  for (const d of [...docs, 'CHANGELOG.md']) assert.doesNotMatch(read(d), /not (?:yet )?built or run|has not been built/i, d);
+  assert.match(read('README.md'), /npx playwright install chromium/);
+  assert.doesNotMatch(read('.githooks/pre-commit'), /CI still scans/);
+});

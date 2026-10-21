@@ -45,10 +45,11 @@ test('compose gives the container no host access: no mounts, docker socket, host
   assert.doesNotMatch(c, /docker\.sock|network_mode|privileged|pid:\s*host/);
   assert.match(c, /read_only:\s*true/);
   assert.match(c, /cap_drop:\s*\[ALL\]/);
+  assert.match(c, /security_opt:\s*\["no-new-privileges:true"\]/);
   assert.match(c, /\/api\/health/);
 });
 
-test('the Dockerfile runs as non-root, ships only the server, and binds 0.0.0.0 only through the NTNP_BIND opt-in', () => {
+test('the Dockerfile runs as non-root, ships the server and the built UI only, and binds 0.0.0.0 only through the NTNP_BIND opt-in', () => {
   const df = code('Dockerfile');
   assert.match(df, /^USER node$/m);
   assert.match(df, /NTNP_BIND=0\.0\.0\.0/);

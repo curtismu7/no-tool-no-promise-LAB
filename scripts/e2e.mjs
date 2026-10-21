@@ -8,7 +8,7 @@
 //   npm run e2e            starts the server on E2E_PORT (default 5370), drives it, stops it
 //   E2E_SHOTS=/some/dir    where screenshots go (default .data/e2e-screenshots, git-ignored)
 //
-// Uses the Chromium the installed Playwright resolves (`npx playwright install chromium` if missing).
+// Needs a Chromium for Playwright: `npx playwright install chromium` (README, Development).
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -86,6 +86,12 @@ try {
   await page.getByTestId('unbacked-governed').waitFor();
   check((await page.getByTestId('unbacked-governed').innerText()).includes('Said, not bound'), 'loose wording: governed reply is flagged "Said, not bound" while its ledger is empty');
 
+  const govText = await page.getByTestId('col-governed').innerText();
+  check(govText.includes('may still be treated as a promise') && !govText.includes('not bound to anything'), 'loose wording: the empty governed ledger does not claim the company is safe');
+  const riskText = await page.locator('section.risk').innerText();
+  check(riskText.includes('Reply text can still mislead a customer.') && riskText.includes('does not make the text true'), 'the residual-risk statement is on the page');
+  check((await page.locator('.react-flow__edge[tabindex]').count()) === 0, 'diagram edges are not tab stops');
+
   // Audit Verify via keyboard.
   const verifyBtn = page.getByRole('button', { name: 'Verify audit trail' });
   await verifyBtn.focus();
@@ -135,6 +141,9 @@ try {
   await sleep(300);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   check(overflow <= 0, `no horizontal scroll at 390px (overflow ${overflow})`);
+  check((await page.locator('.scroll-x[tabindex="0"][role="region"]').count()) === 2, 'the registry and audit tables are focusable scroll regions');
+  const nameBox = await page.locator('table.registry tbody th code').first().boundingBox();
+  check(nameBox && nameBox.height < 30, `a tool name stays on one line at 390px (height ${nameBox?.height})`);
   await shot('dark-390');
   await page.getByRole('button', { name: 'Light theme' }).click();
   await sleep(200);
