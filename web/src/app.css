@@ -87,6 +87,7 @@ select { font: inherit; padding: 0.35rem 0.5rem; border: 1px solid var(--border)
 .ledger { margin-top: 0.75rem; padding: 0.6rem 0.8rem; border: 2px double var(--border); border-radius: 8px; background: var(--bg); }
 .ledger.bound { border-color: var(--stamp); }
 .ledger.free { border-color: var(--ok); }
+.ledger.said { border-color: var(--hold); }
 .ledger .none { color: var(--ok); margin: 0.3rem 0; }
 .ledger .entry { padding: 0.3rem 0; border-bottom: 1px dotted var(--border); overflow-wrap: anywhere; }
 .handoff { margin-top: 0.5rem; }
@@ -100,6 +101,8 @@ ul.plain { list-style: none; margin: 0; padding: 0; } ul.plain li { margin: 0.3r
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
 .scroll-x { overflow-x: auto; max-width: 100%; }
+.scroll-x:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.registry th[scope=row], .audit th, .audit td, .audit .untrusted, .registry code, .audit code { white-space: nowrap; overflow-wrap: normal; }
 table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
 caption { text-align: left; padding-bottom: 0.5rem; color: var(--muted); }
 th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--border); vertical-align: top; }

@@ -15,7 +15,7 @@ export default function Audit({ audit, verify, onVerify, busy }) {
             : "Verification FAILED: a chain does not link.") : "Not verified yet."}
         </span>
       </div>
-      <div className="scroll-x">
+      <div className="scroll-x" tabIndex={0} role="region" aria-label="Audit entries table, scrollable">
         <table className="audit" data-testid="audit-table">
           <caption className="sr-only">Latest audit entries</caption>
           <thead><tr><th scope="col">#</th><th scope="col">Event</th><th scope="col">Agent</th><th scope="col">Tool</th><th scope="col">Decision</th><th scope="col">Hash</th></tr></thead>

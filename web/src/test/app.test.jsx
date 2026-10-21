@@ -66,3 +66,30 @@ test("a server failure is shown, not swallowed", async () => {
   render(<App />);
   expect(await screen.findByRole("alert")).toHaveTextContent("Could not reach the server");
 });
+
+test("Reset clears both runs from the page and says so", async () => {
+  const calls = mockFetch();
+  const user = userEvent.setup();
+  render(<App />);
+  await screen.findByRole("radio", { name: "Fee waiver request" });
+  await user.click(screen.getByRole("button", { name: "Run both" }));
+  await screen.findByTestId("ledger-entries");
+  await user.click(screen.getByRole("button", { name: "Reset" }));
+  await waitFor(() => expect(screen.getAllByText("Pick a scenario and press Run both.")).toHaveLength(2));
+  expect(screen.queryByTestId("ledger-entries")).toBeNull();
+  expect(screen.getByTestId("run-status")).toHaveTextContent("Reset");
+  expect(calls.some((c) => c.url === "/api/reset" && c.method === "POST")).toBe(true);
+});
+
+test("if the ledger cannot be fetched after a run, the page does not show an all-clear for the run that committed", async () => {
+  mockFetch();
+  const base = globalThis.fetch;
+  const user = userEvent.setup();
+  render(<App />);
+  await screen.findByRole("radio", { name: "Fee waiver request" });
+  // from now on the ledger endpoint answers with an empty ledger, as after a reset in another tab
+  globalThis.fetch = vi.fn(async (url, init = {}) => (url === "/api/ledger" ? { ok: true, status: 200, json: async () => ({ count: 0, entries: [] }) } : base(url, init)));
+  await user.click(screen.getByRole("button", { name: "Run both" }));
+  expect(await screen.findByTestId("ledger-mismatch")).toHaveTextContent("cmt-0");
+  expect(screen.getAllByTestId("ledger-empty")).toHaveLength(1);
+});

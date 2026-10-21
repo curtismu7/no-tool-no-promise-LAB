@@ -29,12 +29,24 @@ export function Transcript({ run }) {
 }
 
 export function Ledger({ run, ledger, profile }) {
-  const mine = ledger.entries.filter((e) => run.commitments.includes(`cmt-${e.seq}`));
+  const entries = ledger?.entries ?? [];
+  const mine = entries.filter((e) => run.commitments.includes(`cmt-${e.seq}`));
+  // The run itself says what it recorded. If the fetched ledger does not show all of it, say so instead of an all-clear.
+  const missing = run.commitments.filter((id) => !mine.some((e) => `cmt-${e.seq}` === id));
+  const said = run.analysis?.unbackedPromise;
+  const state = run.commitments.length ? "bound" : said ? "said" : "free";
   return (
-    <section className={`ledger ${mine.length ? "bound" : "free"}`} aria-label={`Commitment ledger, ${profile}`}>
+    <section className={`ledger ${state}`} aria-label={`Commitment ledger, ${profile}`}>
       <h4>Commitment ledger <span className="muted small">what the company is bound to</span></h4>
+      {missing.length > 0 && (
+        <p className="alert" role="alert" data-testid="ledger-mismatch">
+          <strong>The ledger view does not match this run.</strong> The run recorded {run.commitments.length} commitment{run.commitments.length === 1 ? "" : "s"} ({missing.join(", ")}) that the fetched ledger does not show. It may be stale or unavailable. Reload before trusting this panel.
+        </p>
+      )}
       {mine.length === 0 ? (
-        <p className="none" data-testid="ledger-empty"><strong>No commitment recorded.</strong> The company is not bound to anything by this run.</p>
+        missing.length === 0 && (
+          <p className="none" data-testid="ledger-empty"><strong>No commitment recorded by any tool.</strong> What the agent said may still be treated as a promise by the customer.</p>
+        )
       ) : (
         <ul className="plain" data-testid="ledger-entries">
           {mine.map((e) => (
@@ -46,7 +58,7 @@ export function Ledger({ run, ledger, profile }) {
           ))}
         </ul>
       )}
-      <p className="small muted">Whole ledger this session: {ledger.count} entr{ledger.count === 1 ? "y" : "ies"}. Written only by tool handlers; there is no write route.</p>
+      <p className="small muted">Whole ledger this session: {ledger?.count ?? "unknown"} entr{ledger?.count === 1 ? "y" : "ies"}. Written only by tool handlers; there is no write route.</p>
     </section>
   );
 }

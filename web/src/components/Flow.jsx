@@ -114,7 +114,7 @@ export default function Flow({ runs, theme }) {
       </div>
       <div className="flow-wrap" role="group" aria-label="Diagram: customer, agent, tool registry boundary, then safe tools and commit tools, and the commitment ledger. Boxes can be dragged.">
         <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} colorMode={theme}
-          fitView fitViewOptions={{ padding: 0.08 }} nodesConnectable={false} proOptions={{ hideAttribution: true }} minZoom={0.15}>
+          fitView fitViewOptions={{ padding: 0.08, minZoom: 0.45 }} nodesConnectable={false} edgesFocusable={false} proOptions={{ hideAttribution: true }} minZoom={0.15}>
           <Background />
           <Controls showInteractive={false} />
         </ReactFlow>

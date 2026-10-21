@@ -10,7 +10,7 @@ export default function Registry({ registry }) {
       : <td className="absent" data-absent="true"><span className="tag mute">absent</span><span className="small"> denied</span></td>;
   };
   return (
-    <div className="scroll-x">
+    <div className="scroll-x" tabIndex={0} role="region" aria-label="Tool registry table, scrollable">
       <table className="registry" data-testid="registry">
         <caption>Tool registry. Deny by default: an agent may call only the tools in its own set. Everything else is refused and audited.</caption>
         <thead>
