@@ -1,11 +1,18 @@
 // One Express app: the API under /api. createApp() is what the tests use.
 // Every customer- or agent-provided string in a response was made inert and redacted when it was stored; all of it
 // is served as JSON only.
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { createHealth } from './health.js';
 import { RunError, createRuntime } from './runtime.js';
 import { assertBindAllowed, bindHost, credentialGuard, hostGuard, originGuard, serverPort } from './safety.js';
 import { registryView } from './tools.js';
+
+export const DEFAULT_WEB_DIST = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/dist');
+// The built UI: same-origin scripts, styles, images and fetches only. style-src allows inline styles because React Flow sets them.
+export const UI_CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const bad = (res, message, status = 400) => res.status(status).json({ error: status === 404 ? 'not_found' : 'bad_request', message });
@@ -14,12 +21,19 @@ const API_HEADERS = { 'X-Content-Type-Options': 'nosniff', 'Content-Security-Pol
 const isPlain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v) && [Object.prototype, null].includes(Object.getPrototypeOf(v));
 const RUN_KEYS = new Set(['scenario', 'profile', 'wording', 'message']);
 
-export function createApp({ runtime, health = createHealth() } = {}) {
+// webDist: directory with the built UI (web/dist). null disables static serving.
+export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_WEB_DIST } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(hostGuard);
   app.use(originGuard);
   app.use((_req, res, next) => { res.set(API_HEADERS); next(); });
+  if (webDist && fs.existsSync(path.join(webDist, 'index.html'))) {
+    app.use(express.static(webDist, {
+      index: 'index.html', dotfiles: 'ignore',
+      setHeaders: (res) => res.set({ ...API_HEADERS, 'Content-Security-Policy': UI_CSP }),
+    }));
+  }
 
   const api = express.Router();
   api.use(credentialGuard);
@@ -81,11 +95,11 @@ export function createApp({ runtime, health = createHealth() } = {}) {
 }
 
 // Boot on `port`. Refuses a non-loopback host unless NTNP_BIND is set.
-export async function startHttpServer({ port = serverPort(), host = bindHost(), env = process.env, runtime = createRuntime() } = {}) {
+export async function startHttpServer({ port = serverPort(), host = bindHost(), env = process.env, runtime = createRuntime(), webDist = DEFAULT_WEB_DIST } = {}) {
   assertBindAllowed(host, env);
   const health = createHealth({ env });
   return new Promise((resolve, reject) => {
-    const httpServer = createApp({ runtime, health }).listen(port, host);
+    const httpServer = createApp({ runtime, health, webDist }).listen(port, host);
     httpServer.once('error', (e) => { health.stop(); reject(e); });
     httpServer.once('listening', () => {
       const { port: bound } = httpServer.address();

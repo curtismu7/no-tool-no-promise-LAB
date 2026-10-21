@@ -25,6 +25,8 @@ const MUTATIONS = [
   ['safety.js', 'if (CREDENTIAL_HEADERS.some((h) => req.headers[h] !== undefined)) {', 'if (false) {', 'safety.test.js', 'credential headers are accepted'],
   ['sanitize.js', 'export function revealText(value, max = 2000) {', 'export function revealText(value, max = 2000) { return String(value ?? \'\').slice(0, max);', 'planner.test.js', 'hidden characters are no longer made visible'],
   ['redaction.js', ".replace(/\\beyJ[A-Za-z0-9_-]{5,}\\.[A-Za-z0-9_-]{5,}\\.[A-Za-z0-9_-]*/g, MARK)", '', 'planner.test.js', 'JWT-shaped strings are no longer redacted'],
+  ['app.js', "{ ...API_HEADERS, 'Content-Security-Policy': UI_CSP }", "{ ...API_HEADERS, 'Content-Security-Policy': \"default-src *\" }", 'ui.test.js', 'the UI is served without the same-origin-only CSP'],
+  ['app.js', "dotfiles: 'ignore'", "dotfiles: 'allow'", 'ui.test.js', 'dotfiles in the UI directory are served'],
 ];
 
 function runAgainst(srcDir, testFile) {
