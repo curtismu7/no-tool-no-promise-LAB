@@ -119,7 +119,7 @@ function runAgainst(srcDir, testFile) {
   const env = { ...process.env, NTNP_SRC_DIR: srcDir };
   delete env.NODE_TEST_CONTEXT;
   return new Promise((resolve) => {
-    cp.execFile(process.execPath, ['--test', `test/${testFile}`], { cwd: SERVER, env, encoding: 'utf8', timeout: 240_000, maxBuffer: 16 * 1024 * 1024 }, (error, stdout, stderr) => {
+    cp.execFile(process.execPath, ['--test', '--test-reporter=spec', `test/${testFile}`], { cwd: SERVER, env, encoding: 'utf8', timeout: 240_000, maxBuffer: 16 * 1024 * 1024 }, (error, stdout, stderr) => {
       resolve({ status: error ? (typeof error.code === 'number' ? error.code : null) : 0, signal: error?.signal ?? (error?.killed ? 'SIGTERM' : null), error: error && typeof error.code !== 'number' && !error.signal && !error.killed ? error : null, stdout, stderr });
     });
   });
