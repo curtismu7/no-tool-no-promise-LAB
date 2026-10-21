@@ -56,3 +56,17 @@ test('the Dockerfile runs as non-root, ships the server and the built UI only, a
   assert.match(df, /EXPOSE 5350/);
   assert.doesNotMatch(df, /docker-cli|lsof|procps/);
 });
+
+test('the Dockerfile is multi-stage (builds web/dist, copies it), has a /api/health HEALTHCHECK, and no volume or socket', () => {
+  const df = code('Dockerfile');
+  assert.ok((df.match(/^FROM /gm) || []).length >= 2);
+  assert.match(df, /npm run build -w web/);
+  assert.match(df, /COPY --from=web \/app\/web\/dist web\/dist/);
+  assert.match(df, /^HEALTHCHECK .*\/api\/health/m);
+  assert.doesNotMatch(df, /^\s*VOLUME|docker\.sock/m);
+});
+
+test('.dockerignore keeps node_modules, .env and .git out of the build context', () => {
+  const ig = read('.dockerignore');
+  for (const p of ['node_modules', '.env', '.git']) assert.ok(ig.split('\n').some((l) => l.includes(p)), p);
+});
