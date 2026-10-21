@@ -1,0 +1,16 @@
+{
+  "demos": [
+    {
+      "id": "no-tool-no-promise",
+      "name": "No tool, no promise",
+      "catalogId": "D31",
+      "kind": "Demo",
+      "description": "A support agent can only commit the company through a tool. Same scripted agent, two tool sets, and a commitment ledger that only tools can write. Mock only: no tenant, no LLM.",
+      "url": "http://localhost:5350",
+      "healthPath": "/api/health",
+      "composeFile": "/Users/cmuir/Development/no-tool-no-promise/docker-compose.yml",
+      "composeOverlays": [],
+      "notes": "Host-run: npm install && npm run build && npm start (port 5350; npm run doctor checks it). Or: docker compose up --build -d (publishes 127.0.0.1:5350 only; HOST_PORT changes it, and the shelf's Start button does not set HOST_PORT). Edit composeFile to this checkout's absolute path."
+    }
+  ]
+}
