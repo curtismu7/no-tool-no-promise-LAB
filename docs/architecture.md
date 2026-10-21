@@ -39,3 +39,7 @@ Both are hash chains: each entry holds `seq`, `at`, `prev` (the hash of the entr
 ## Limits
 
 200 runs, 300 ledger entries, 3000 audit entries, 200 review requests and 200 approvals, a 4 KB request body, 500 characters of customer message.
+
+## Web UI (step ND1)
+
+`web/` is React + Vite. `web/src/App.jsx` holds the state (scenarios, registry, the last run per profile, ledger, reviews, audit) and talks only to same-origin `/api` through `web/src/lib/api.js`; the only request with a body is `POST /api/runs` with `scenario`, `profile` and `wording`. `components/Column.jsx` draws a transcript and the ledger entries that belong to that run; `Registry.jsx` the tool matrix; `Flow.jsx` the `@xyflow/react` diagram, whose Simulate steps are built from the real run (`buildSteps`); `Audit.jsx` the trail and Verify; `Untrusted.jsx` renders any customer or agent string as text with hidden characters revealed. `server/src/app.js` serves `web/dist` under `UI_CSP`. Tests: vitest and testing-library in `web/src/test`, the static-serving tests in `server/test/ui.test.js` (pinned by two mutations), and `scripts/e2e.mjs` in a real browser.
