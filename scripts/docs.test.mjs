@@ -49,3 +49,10 @@ test('the docs do not say the image was never built, and the README says how to 
   assert.match(read('README.md'), /npx playwright install chromium/);
   assert.doesNotMatch(read('.githooks/pre-commit'), /CI still scans/);
 });
+
+test('CLAUDE.md and the talk track exist and mention the app port', () => {
+  for (const f of ['CLAUDE.md', 'docs/talk-track.md']) {
+    assert.ok(fs.existsSync(path.join(root, f)), `${f} is missing`);
+    assert.match(read(f), /5350/, `${f} does not mention port 5350`);
+  }
+});
