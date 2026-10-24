@@ -47,6 +47,7 @@ select { font: inherit; padding: 0.35rem 0.5rem; border: 1px solid var(--border)
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem; margin: 0.5rem 0; }
 .row label, .controls label { display: inline-flex; align-items: center; gap: 0.5rem; }
 .card { padding: 1rem; margin: 1rem 0; border: 1px solid var(--border); border-radius: 10px; background: var(--card); }
+.hosted { position: sticky; top: 0; z-index: 10; margin: 0.6rem 0; padding: 0.6rem 0.8rem; border-radius: 6px; border: 2px solid var(--info); background: var(--info-wash); color: var(--text); font-weight: 600; }
 .alert { padding: 0.6rem 0.8rem; border-radius: 6px; background: var(--deny-wash); color: var(--deny); border: 1px solid var(--deny); }
 .status { min-height: 1.5rem; font-weight: 600; margin: 0; }
 .empty { text-align: center; padding: 2rem 0; }

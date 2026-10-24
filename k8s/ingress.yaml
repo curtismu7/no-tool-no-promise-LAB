@@ -1,0 +1,20 @@
+# The host is supplied by k8s/deploy.sh from SE_HOST (an SE-cluster host the owner names). There is deliberately no default,
+# and no TLS section: the owner decides certificates. The app checks the Host header for loopback names only, so the
+# ingress rewrites Host to 127.0.0.1:5350 for the pod. Browsers send their own Origin, which the app's same-origin guard
+# would refuse, so the ingress also sets Origin to the loopback origin of the pod. Sec-Fetch-Site is left as the browser
+# sent it, so a real cross-site request is still refused. UNVERIFIED on the SE cluster: the ingress controller must allow
+# configuration-snippet annotations; the owner's browser proof is the check (see docs/k8s.md).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: no-tool-no-promise
+  annotations:
+    nginx.ingress.kubernetes.io/upstream-vhost: "127.0.0.1:5350"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Origin "http://127.0.0.1:5350";
+spec:
+  rules:
+    - host: __SE_HOST__
+      http:
+        paths:
+          - { path: /, pathType: Prefix, backend: { service: { name: no-tool-no-promise, port: { name: http } } } }

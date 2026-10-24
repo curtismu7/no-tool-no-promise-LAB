@@ -15,6 +15,8 @@ customer message ──> scripted planner ──> tool call ──> dispatcher �
 | `server/src/toolbox.js` | The handlers and the dispatcher. The only code that writes a commitment. |
 | `server/src/chain.js` | A capped, append-only, hash-chained log; `createLedger()` returns a read-only `reader` and a `writer` that only the toolbox receives. |
 | `server/src/planner.js` | The deterministic scripted agent and its reply templates. No model, no clock, no randomness. |
+| `server/src/config.js` | The `MODE` switch (`local` default, `se-mock`), the live-flag refusal and the doctor check. |
+| `server/src/workspaces.js` | Per-visitor workspace registry for `se-mock`: id validation, cap, LRU, TTL. Inventory of all state: [k8s.md](k8s.md). |
 | `server/src/scenarios.js` | The five scenarios. |
 | `server/src/runtime.js` | In-memory state, the run executor, capacity limits, reset. Exposes read-only views. |
 | `server/src/app.js` | Express app, API routes, guards, error handling. Never touches the toolbox or the ledger writer. |

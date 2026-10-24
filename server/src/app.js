@@ -1,14 +1,18 @@
 // One Express app: the API under /api. createApp() is what the tests use.
 // Every customer- or agent-provided string in a response was made inert and redacted when it was stored; all of it
 // is served as JSON only.
+// MODE=se-mock: every /api request except /api/health runs against the runtime of its workspace (X-Workspace-Id).
+// MODE=local: every request runs against the one process-wide runtime, as before.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
+import { assertModeAllowed } from './config.js';
 import { createHealth } from './health.js';
 import { RunError, createRuntime } from './runtime.js';
 import { assertBindAllowed, bindHost, credentialGuard, hostGuard, originGuard, serverPort } from './safety.js';
 import { registryView } from './tools.js';
+import { WORKSPACE_HEADER, createWorkspaces, resolveWorkspaceId } from './workspaces.js';
 
 export const DEFAULT_WEB_DIST = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/dist');
 // The built UI: same-origin scripts, styles, images and fetches only. style-src allows inline styles because React Flow sets them.
@@ -22,7 +26,8 @@ const isPlain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v) 
 const RUN_KEYS = new Set(['scenario', 'profile', 'wording', 'message']);
 
 // webDist: directory with the built UI (web/dist). null disables static serving.
-export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_WEB_DIST } = {}) {
+// mode: 'local' (default) or 'se-mock'. workspaceOptions: { max, ttlMs, now } for the se-mock registry (tests lower them).
+export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_WEB_DIST, mode = 'local', workspaceOptions = {} } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(hostGuard);
@@ -35,12 +40,28 @@ export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_
     }));
   }
 
+  const workspaces = mode === 'se-mock'
+    ? createWorkspaces({ defaultRuntime: runtime, create: () => createRuntime(), ...workspaceOptions })
+    : null;
+  // Picks the runtime for this request. Local: always the process-wide one. se-mock: the workspace named by the header.
+  function workspaceGuard(req, res, next) {
+    if (!workspaces) { req.runtime = runtime; return next(); }
+    const id = resolveWorkspaceId(req.headers[WORKSPACE_HEADER]);
+    if (id === null) return res.status(400).json({ error: 'bad_workspace', message: `${WORKSPACE_HEADER} must be 1-32 lowercase letters, digits or hyphens, starting with a letter or digit` });
+    // Only creating a run allocates a workspace. Any other request (a read, an unknown endpoint, a Reset) gets the
+    // workspace if it exists, else a throwaway empty runtime that is not kept, so a flood of reads cannot evict a visitor.
+    req.runtime = req.method === 'POST' && req.path === '/runs' ? workspaces.get(id) : (workspaces.peek(id) ?? createRuntime());
+    req.workspace = id;
+    return next();
+  }
+
   const api = express.Router();
   api.use(credentialGuard);
   api.use('/health', health.router);
+  api.use(workspaceGuard);
   api.use(express.json({ limit: '4kb' }));
 
-  api.get('/scenarios', (_req, res) => res.json({ scenarios: runtime.scenarios() }));
+  api.get('/scenarios', (req, res) => res.json({ scenarios: req.runtime.scenarios() }));
   api.get('/agents', (_req, res) => res.json(registryView()));
 
   api.post('/runs', (req, res) => {
@@ -49,34 +70,34 @@ export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_
     // Only these four fields exist. There is no field that names an agent or a tool, and any other key is refused.
     const extra = Object.keys(body).filter((k) => !RUN_KEYS.has(k));
     if (extra.length) return bad(res, 'unknown field: a run takes scenario, profile, optional wording and message only');
-    try { return res.status(201).json(runtime.run(body)); } catch (e) {
+    try { return res.status(201).json(req.runtime.run(body)); } catch (e) {
       if (e instanceof RunError) return res.status(e.status).json({ error: e.code, message: e.message });
       throw e;
     }
   });
-  api.get('/runs', (_req, res) => res.json({ runs: runtime.runs() }));
+  api.get('/runs', (req, res) => res.json({ runs: req.runtime.runs() }));
   api.get('/runs/:id', (req, res) => {
-    const r = /^run-\d{1,6}$/.test(req.params.id) ? runtime.getRun(req.params.id) : undefined;
+    const r = /^run-\d{1,6}$/.test(req.params.id) ? req.runtime.getRun(req.params.id) : undefined;
     return r ? res.json(r) : bad(res, 'no such run', 404);
   });
 
-  api.get('/ledger', (_req, res) => {
-    const l = runtime.ledger;
+  api.get('/ledger', (req, res) => {
+    const l = req.runtime.ledger;
     res.json({ appendOnly: true, writableBy: 'tool handlers only', cap: l.cap, count: l.size(), head: l.head(), entries: l.entries() });
   });
-  api.get('/reviews', (_req, res) => res.json(runtime.queues()));
+  api.get('/reviews', (req, res) => res.json(req.runtime.queues()));
 
-  api.get('/audit/verify', (_req, res) => res.json({ audit: runtime.audit.verify(), ledger: runtime.ledger.verify() }));
+  api.get('/audit/verify', (req, res) => res.json({ audit: req.runtime.audit.verify(), ledger: req.runtime.ledger.verify() }));
   api.get('/audit', (req, res) => {
     const n = Number(req.query.limit ?? 200);
     const limit = Number.isInteger(n) && n >= 1 && n <= 500 ? n : 200;
-    const all = runtime.audit.entries();
-    res.json({ cap: runtime.audit.cap, count: all.length, head: runtime.audit.head(), entries: all.slice(-limit) });
+    const all = req.runtime.audit.entries();
+    res.json({ cap: req.runtime.audit.cap, count: all.length, head: req.runtime.audit.head(), entries: all.slice(-limit) });
   });
 
   api.post('/reset', (req, res) => {
     if (req.body && Object.keys(req.body).length) return bad(res, 'POST /api/reset takes no parameters');
-    runtime.reset();
+    req.runtime.reset();
     return res.json({ ok: true });
   });
 
@@ -95,17 +116,18 @@ export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_
   return app;
 }
 
-// Boot on `port`. Refuses a non-loopback host unless NTNP_BIND is set.
-export async function startHttpServer({ port = serverPort(), host = bindHost(), env = process.env, runtime = createRuntime(), webDist = DEFAULT_WEB_DIST } = {}) {
+// Boot on `port`. Refuses a non-loopback host unless NTNP_BIND is set. Refuses an unknown MODE or a live flag in se-mock.
+export async function startHttpServer({ port = serverPort(), host = bindHost(), env = process.env, runtime = createRuntime(), webDist = DEFAULT_WEB_DIST, workspaceOptions } = {}) {
   assertBindAllowed(host, env);
+  const mode = assertModeAllowed(env);
   const health = createHealth({ env });
   return new Promise((resolve, reject) => {
-    const httpServer = createApp({ runtime, health, webDist }).listen(port, host);
+    const httpServer = createApp({ runtime, health, webDist, mode, workspaceOptions }).listen(port, host);
     httpServer.once('error', (e) => { health.stop(); reject(e); });
     httpServer.once('listening', () => {
       const { port: bound } = httpServer.address();
       resolve({
-        port: bound, runtime, url: `http://127.0.0.1:${bound}/`,
+        port: bound, runtime, mode, url: `http://127.0.0.1:${bound}/`,
         close: async () => { health.stop(); await new Promise((r) => { httpServer.closeAllConnections?.(); httpServer.close(r); }); },
       });
     });

@@ -12,6 +12,8 @@ npm run doctor       # preflight, exit 1 on any failure
 npm run e2e          # headless Chromium on port 5370; needs a build and: npx playwright install chromium
 npm run content-pack # regenerates content-pack.json and validates it against docs/content-pack.schema.json
 npm start            # UI and API at http://127.0.0.1:5350
+MODE=se-mock npm start  # the hosted mock build: per-tab workspaces, live flags refused (docs/k8s.md)
+k8s/deploy.sh --dry-run # renders the SE manifests; the real deploy needs OWNER_APPROVED=1 and is owner-run
 npm run dev          # Vite on 5360, proxying /api to 5350
 ```
 
@@ -25,6 +27,7 @@ Port 5350 (`NTNP_PORT`, must be in 5350-5399; tests use 5380-5399). Docker is Or
 - Never use `crypto.generateKeyPairSync` or async `generateKeyPair` (aborted on Node 20 in CI).
 - Never parse `node:test` stdout; use the exit code.
 - The forbidden-strings scan must print 0: `git log -p --all | grep -cF -f ~/.config/demo-kit/forbidden-strings.txt`. Never print that file. gitleaks runs in `.githooks/pre-commit`.
+- `MODE` is `local` (default) or `se-mock`. In se-mock, state is per workspace (`X-Workspace-Id`, see `server/src/workspaces.js`); never add process-wide state for visitor data. Any live flag (`NTNP_LIVE`, `NTNP_LLM_URL`, `NTNP_TENANT`, `NTNP_CREDENTIALS`) is refused in se-mock, and `docs/k8s.md` has the state inventory.
 - Mock tokens and values are labelled as mock. Product claims are UNVERIFIED unless sourced; this repo makes none.
 - Do not add a route, field or UI path that lets a request name an agent or a tool, or that writes the ledger outside `server/src/toolbox.js`.
 
@@ -35,6 +38,7 @@ Port 5350 (`NTNP_PORT`, must be in 5350-5399; tests use 5380-5399). Docker is Or
 - `server/test/planner.test.js`: inert and redacted text, deterministic planner.
 - `server/test/mutation.test.js`: removes each check from a copy of `src/` and the tests must fail.
 - `scripts/compose.test.mjs`: container publishes `127.0.0.1` only. `scripts/docs.test.mjs`: docs match the code.
+- `server/test/mode.test.js`, `server/test/workspace.test.js`: MODE refusals, workspace isolation, hostile ids, cap and TTL. `scripts/k8s.test.mjs`: manifests keep their safety properties (text checks, no cluster).
 - The table with rule-to-test mapping is [docs/safety.md](docs/safety.md); keep it in step.
 
 ## Shelf and content pack

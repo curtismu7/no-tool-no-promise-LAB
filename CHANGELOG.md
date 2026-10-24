@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Hosted mock build for the SE cluster (rule 18): `MODE=local` (default, unchanged) or `MODE=se-mock`. In se-mock, state is per workspace (`X-Workspace-Id`, capped at 50, idle TTL 30 minutes, default never evicted), any live flag is refused at startup and by the doctor, `GET /api/health` reports `mode`, and the UI shows a HOSTED SIMULATION badge and banner. `k8s/` has the Deployment, Service, Ingress and a `deploy.sh` that needs `OWNER_APPROVED=1` and renders with `--dry-run` only. `docs/k8s.md` has the state inventory and residual risks. Tests: `server/test/mode.test.js`, `server/test/workspace.test.js`, `scripts/k8s.test.mjs`, and `web/src/test/mode.test.jsx`.
+
 ## 0.1.0
 
 - ND0: server core. Per-agent tool registry (deny by default; governed and ungoverned tool sets), scripted deterministic agent planner, tool handlers (policy lookup, human handoff, approval-required credit, and the three commit tools that exist only in the ungoverned set), hash-chained append-only commitment ledger and audit log, five scenarios, API (`/api/health`, `/api/scenarios`, `/api/agents`, `/api/runs`, `/api/ledger`, `/api/audit`, `/api/audit/verify`, `/api/reviews`, `/api/reset`), doctor, Dockerfile and loopback-published compose, gitleaks pre-commit hook, mutation-pinning tests. The web UI is the next step (ND1) and is not built.

@@ -1,0 +1,54 @@
+# MOCK-ONLY hosted build of no-tool-no-promise for the SE cluster (rule 18). Same image as the standalone; MODE=se-mock
+# turns on per-visitor workspaces and refuses every live flag. No secrets, no tenant ids, no data volumes.
+# The __IMAGE__ token is filled by k8s/deploy.sh; nothing here names a real host or registry path, and there is no namespace.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: no-tool-no-promise
+  labels: { app: no-tool-no-promise }
+spec:
+  replicas: 1   # state is in memory, per workspace; a second replica would split a visitor's workspace across pods
+  # Recreate: a RollingUpdate surge would run a second pod (replicas 1, maxSurge rounds up), and each pod keeps its own workspaces.
+  strategy: { type: Recreate }
+  selector:
+    matchLabels: { app: no-tool-no-promise }
+  template:
+    metadata:
+      labels: { app: no-tool-no-promise }
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: app
+          image: __IMAGE__
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 5350 }
+          env:
+            - { name: MODE, value: se-mock }
+            - { name: NTNP_PORT, value: "5350" }
+            - { name: NTNP_BIND, value: "0.0.0.0" }
+          # The app answers loopback Host headers only (DNS-rebinding guard), so the probes send a loopback Host.
+          readinessProbe:
+            httpGet: { path: /api/health, port: http, httpHeaders: [{ name: Host, value: "127.0.0.1:5350" }] }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /api/health, port: http, httpHeaders: [{ name: Host, value: "127.0.0.1:5350" }] }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 50m, memory: 96Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - { name: tmp, emptyDir: { sizeLimit: 16Mi } }

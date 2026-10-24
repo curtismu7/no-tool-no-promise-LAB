@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: no-tool-no-promise
+  labels: { app: no-tool-no-promise }
+spec:
+  selector: { app: no-tool-no-promise }
+  ports:
+    - { name: http, port: 80, targetPort: http }
