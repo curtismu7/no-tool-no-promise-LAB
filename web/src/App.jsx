@@ -6,6 +6,7 @@ import Registry from "./components/Registry.jsx";
 import Risk from "./components/Risk.jsx";
 import Audit from "./components/Audit.jsx";
 import Flow from "./components/Flow.jsx";
+import ModeBanner from "./components/ModeBanner.jsx";
 
 const EMPTY_LEDGER = { count: 0, entries: [] };
 const EMPTY_REVIEWS = { reviews: [], approvals: [] };
@@ -15,8 +16,24 @@ function initialTheme() {
   return globalThis.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light";
 }
 
+// Set at build time by the hosted image (docker build --build-arg VITE_NTNP_MODE=se-mock). Null for the local build.
+function buildMode() {
+  return import.meta.env.VITE_NTNP_MODE === "se-mock" ? "se-mock" : null;
+}
+
+// One failed read is retried, so a blip does not leave the hosted build showing the local label. Resolves null if all fail.
+async function readHealth(tries = 3) {
+  for (let i = 0; ; i += 1) {
+    try { return await api.getHealth(); } catch {
+      if (i + 1 >= tries) return null;
+      await new Promise((r) => setTimeout(r, 250 * (i + 1)));
+    }
+  }
+}
+
 export default function App() {
   const [theme, setTheme] = useState(initialTheme);
+  const [presenting, setPresenting] = useState(false);
   const [scenarios, setScenarios] = useState([]);
   const [scenario, setScenario] = useState("fee-waiver");
   const [wording, setWording] = useState("careful");
@@ -29,6 +46,7 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
+  const [mode, setMode] = useState(() => buildMode() ?? "local");
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -47,6 +65,8 @@ export default function App() {
         const [s, g] = await Promise.all([api.getScenarios(), api.getAgents()]);
         if (!live) return;
         setScenarios(s.scenarios); setRegistry(g);
+        // A hosted build never asks health for its mode. A local build asks; if health cannot be read, it stays local.
+        if (!buildMode()) readHealth().then((h) => { if (live && h?.mode) setMode(h.mode); });
         await refresh();
       } catch (e) { if (live) setError(`Could not reach the server: ${e.message}`); }
     })();
@@ -80,14 +100,17 @@ export default function App() {
       <a className="skip" href="#main">Skip to content</a>
       <header className="top">
         <h1>No tool, no promise</h1>
-        <span className="mode" data-testid="mode-badge" title="Scripted agent, no model, no tenant, no network">DEMO: mock only</span>
+        <span className="mode" data-testid="mode-badge" title="Scripted agent, no model, no tenant, no network">{mode === "se-mock" ? "HOSTED SIMULATION: mock only" : "DEMO: mock only"}</span>
         <p className="tagline">The tool set is the authorization boundary.</p>
         <button type="button" className="btn" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-pressed={theme === "dark"}>
           {theme === "dark" ? "Light theme" : "Dark theme"}
         </button>
+        <button type="button" className="btn" onClick={() => setPresenting(!presenting)} aria-pressed={presenting}>Presenter mode</button>
       </header>
       <main id="main" className="page" tabIndex={-1}>
-        <Story />
+        {/* Sticky: the banner stays on screen in every view, presenter mode included. */}
+        <ModeBanner mode={mode} />
+        {!presenting && <Story />}
         {error && <p className="alert" role="alert">{error}</p>}
 
         <section className="card picker" aria-labelledby="pick-h">
@@ -119,23 +142,29 @@ export default function App() {
           <Column profile="governed" agent={agentOf("governed")} run={runs.governed} ledger={ledger} reviews={reviews} />
         </section>
 
-        <Risk />
+        {!presenting && <Risk />}
 
-        <section className="card" aria-labelledby="reg-h">
-          <h2 id="reg-h">Per-agent tool registry</h2>
-          <Registry registry={registry} />
-        </section>
+        {!presenting && (
+          <section className="card" aria-labelledby="reg-h">
+            <h2 id="reg-h">Per-agent tool registry</h2>
+            <Registry registry={registry} />
+          </section>
+        )}
 
-        <section aria-labelledby="flow-h">
-          <h2 id="flow-h">Where the boundary sits</h2>
-          <Flow runs={runs} theme={theme} />
-        </section>
+        {!presenting && (
+          <section aria-labelledby="flow-h">
+            <h2 id="flow-h">Where the boundary sits</h2>
+            <Flow runs={runs} theme={theme} />
+          </section>
+        )}
 
-        <section className="card" aria-labelledby="aud-h">
-          <h2 id="aud-h">Audit trail</h2>
-          <Audit audit={audit} verify={verify} onVerify={doVerify} busy={busy} />
-        </section>
-        <footer className="small muted">Mock demo. A deterministic scripted planner stands in for the agent; nothing leaves this machine.</footer>
+        {!presenting && (
+          <section className="card" aria-labelledby="aud-h">
+            <h2 id="aud-h">Audit trail</h2>
+            <Audit audit={audit} verify={verify} onVerify={doVerify} busy={busy} />
+          </section>
+        )}
+        <footer className="small muted">{mode === "se-mock" ? "Hosted mock build. A deterministic scripted planner stands in for the agent; no tenant, no model and no outbound calls." : "Mock demo. A deterministic scripted planner stands in for the agent; nothing leaves this machine."}</footer>
       </main>
     </>
   );

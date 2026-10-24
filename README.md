@@ -17,7 +17,7 @@ The boundary is the tool set, not the wording. An agent can still say something 
 
 ```
 npm install
-npm test          # server tests + docs and compose checks
+npm test          # server tests, web tests, then docs, compose, content-pack, shelf-entry and k8s manifest checks
 npm run doctor    # preflight, exit 1 on any failure
 npm run build     # builds web/dist, which the server then serves
 npm start         # UI and API at http://127.0.0.1:5350
@@ -26,7 +26,7 @@ npm run content-pack  # regenerates content-pack.json and validates it against d
 npm run e2e       # headless Chromium run on 5370 (needs npm run build first, and a browser: npx playwright install chromium)
 ```
 
-Port 5350 by default (`NTNP_PORT`, must be 5350-5399). The server binds `127.0.0.1` only; `NTNP_BIND` opts in to another address (the container does, and compose publishes on `127.0.0.1` only).
+Port 5350 by default (`NTNP_PORT`, must be 5350-5399). `MODE` is `local` (the default, this standalone) or `se-mock` (the hosted mock build, see [docs/k8s.md](docs/k8s.md)); any other value is refused. The server binds `127.0.0.1` only; `NTNP_BIND` opts in to another address (the container does, and compose publishes on `127.0.0.1` only).
 
 ```
 curl -s localhost:5350/api/health
@@ -41,7 +41,7 @@ Docker (OrbStack): `docker compose up --build -d` publishes `127.0.0.1:5350` (`H
 
 ## The UI
 
-One page, story first. A four-step story strip, then a scenario picker (fee waiver, refund over limit, change of terms, prompt-injected, needs approval) and **Run both**, which sends the same message to the ungoverned and the governed agent. Two columns follow: each has the chat transcript (customer message, tool calls as inert text, agent reply) and, beneath it, the commitment ledger. The ungoverned column shows a recorded commitment; the governed column shows none and the human handoff request. Below: the "words are not commitments, tools are" panel with the residual risk, the per-agent tool registry (the commit tools are visibly absent for the governed agent), a React Flow diagram (customer, agent, tool registry boundary, safe tools and commit tools, ledger) with movable boxes plus Simulate, Reset diagram and a speed control that replay the last real run, and the audit trail with **Verify**. The wording selector `loose` makes the agent over-promise, so you can see a reply that says "done" next to an empty ledger ("Said, not bound", a keyword heuristic). A DEMO badge is always shown; dark and light themes; keyboard reachable; every customer or agent string is rendered as text with hidden characters shown as `[U+XXXX]`.
+One page, story first. A four-step story strip, then a scenario picker (fee waiver, refund over limit, change of terms, prompt-injected, needs approval) and **Run both**, which sends the same message to the ungoverned and the governed agent. Two columns follow: each has the chat transcript (customer message, tool calls as inert text, agent reply) and, beneath it, the commitment ledger. The ungoverned column shows a recorded commitment; the governed column shows none and the human handoff request. Below: the "words are not commitments, tools are" panel with the residual risk, the per-agent tool registry (the commit tools are visibly absent for the governed agent), a React Flow diagram (customer, agent, tool registry boundary, safe tools and commit tools, ledger) with movable boxes plus Simulate, Reset diagram and a speed control that replay the last real run, and the audit trail with **Verify**. The wording selector `loose` makes the agent over-promise, so you can see a reply that says "done" next to an empty ledger ("Said, not bound", a keyword heuristic). A DEMO badge is always shown (in the hosted build it reads HOSTED SIMULATION, with a banner above the content); dark and light themes; keyboard reachable; every customer or agent string is rendered as text with hidden characters shown as `[U+XXXX]`.
 
 The server serves `web/dist` with a same-origin-only Content-Security-Policy (`default-src 'self'`, no inline script, `connect-src 'self'`). The API keeps `default-src 'none'`.
 
@@ -59,12 +59,15 @@ The server serves `web/dist` with a same-origin-only Content-Security-Policy (`d
 | `GET /api/audit`, `GET /api/audit/verify` | the audit log (latest entries, `?limit=1..500`); verification of both hash chains |
 | `POST /api/reset` | clears runs, ledger, queues and audit; takes no parameters |
 
+In `MODE=se-mock` every route except `GET /api/health` works inside the workspace named by the `X-Workspace-Id` header (1-32 lowercase letters, digits or hyphens; no header means `default`). The UI sends a random id per tab. Locally the header is ignored and there is one shared state.
+
 Scenarios: `fee-waiver`, `refund-over-limit`, `change-of-terms`, `prompt-injected`, `needs-approval`. Profiles: `ungoverned`, `governed`. In every scenario the governed profile ends with zero commitments; the ungoverned profile commits in all but `needs-approval`, where the tool exists for both agents but only creates a pending approval.
 
 ## Packaging
 
 - **Docker**: multi-stage `Dockerfile` (stage 1 builds `web/dist`, stage 2 ships the server and that build, runs as the non-root `node` user, `HEALTHCHECK` on `/api/health`). `docker-compose.yml` publishes `127.0.0.1` only, read-only root, all capabilities dropped, `no-new-privileges`, no volumes, no docker socket, no host network. All pinned by `scripts/compose.test.mjs`.
 - **Learning Hub content pack**: `content-pack.json` is generated by `scripts/build-content-pack.mjs` from `content/terms.json` and `content/stories.json` and validated by `scripts/validate-content-pack.mjs` (ajv) against `docs/content-pack.schema.json`. That schema is a copy of the Learning Hub's own (`learning-hub/server/schema/content-pack.schema.json`); only its `$comment` line differs. `scripts/content-pack.test.mjs` fails if the committed file is stale, if the story text differs from the UI, or if the residual-risk statement is dropped. The pack lists no external sources.
+- **Hosted mock build (rule 18)**: the same image with `MODE=se-mock`: per-workspace state, live flags refused at startup, a HOSTED SIMULATION banner. `k8s/` holds the Deployment, Service, Ingress (placeholders `__IMAGE__` and `__SE_HOST__`) and `deploy.sh`, which refuses to run without `OWNER_APPROVED=1` and only renders with `--dry-run`. Nothing is deployed from this repo. See [docs/k8s.md](docs/k8s.md).
 - **demo-shelf entry**: `docs/shelf-entry.json` (catalog id D31, port 5350). `scripts/lib/shelf-registry-rules.mjs` is a copy of the shelf's validation rules, tested by `scripts/shelf-entry.test.mjs`. Edit `composeFile` to this checkout's absolute path before adding it to the shelf.
 
 ## Layout

@@ -1,5 +1,6 @@
 // Preflight checks shared by `npm run doctor` and GET /api/health. Synchronous, no network, never prints a secret.
 // Each check: { id, level: 'pass' | 'info' | 'fail', detail }.
+import { assertModeAllowed } from './config.js';
 import { PORT_MAX, PORT_MIN, assertBindAllowed, bindHost, portInRange, serverPort } from './safety.js';
 import { boundaryViolations } from './tools.js';
 
@@ -18,6 +19,9 @@ export function runChecks({ env = process.env, boundary = boundaryViolations } =
 
   const bad = boundary();
   add('boundary', bad.length ? 'fail' : 'pass', bad.length ? `a governed agent holds a commit tool: ${bad.join(', ')}` : 'the governed tool set holds no tool that can commit the company');
+
+  try { add('mode', 'pass', `MODE ${assertModeAllowed(env)}${env.MODE === 'se-mock' ? ' (hosted mock build: live flags refused, per-visitor workspaces)' : ' (standalone, process-wide state)'}`); }
+  catch (e) { add('mode', 'fail', e.message); }
 
   add('outbound', 'pass', 'no outbound settings: no LLM, no tenant, no network; the agent is a scripted planner');
   return checks;

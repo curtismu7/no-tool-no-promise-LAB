@@ -1,7 +1,9 @@
-// Thin fetch wrapper. Same-origin only. Only POST /api/runs carries a body (scenario, profile, wording); no headers
-// beyond Accept and Content-Type, no credentials: the server refuses them.
+// Thin fetch wrapper. Same-origin only. Only POST /api/runs carries a body (scenario, profile, wording). Headers: Accept,
+// Content-Type for bodies, and the tab's workspace id (honoured only in MODE=se-mock). No credentials: the server refuses them.
+import { workspaceId } from "./workspace.js";
+
 async function call(path, method = "GET", body) {
-  const init = { method, headers: { Accept: "application/json" } };
+  const init = { method, headers: { Accept: "application/json", "X-Workspace-Id": workspaceId() } };
   if (body !== undefined) { init.headers["Content-Type"] = "application/json"; init.body = JSON.stringify(body); }
   const res = await fetch(path, init);
   let data = null;
