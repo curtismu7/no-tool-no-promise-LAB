@@ -7,6 +7,7 @@ import Risk from "./components/Risk.jsx";
 import Audit from "./components/Audit.jsx";
 import Flow from "./components/Flow.jsx";
 import ModeBanner from "./components/ModeBanner.jsx";
+import ModeToggle from "./components/ModeToggle.jsx";
 
 const EMPTY_LEDGER = { count: 0, entries: [] };
 const EMPTY_REVIEWS = { reviews: [], approvals: [] };
@@ -47,6 +48,7 @@ export default function App() {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const [mode, setMode] = useState(() => buildMode() ?? "local");
+  const [info, setInfo] = useState(null); // { source, realAvailable, hosted, realReason } from GET /api/info
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -72,6 +74,23 @@ export default function App() {
     })();
     return () => { live = false; };
   }, [refresh]);
+
+  useEffect(() => { api.getInfo().then(setInfo).catch(() => setInfo(null)); }, []);
+
+  // After a Mock/Real switch everything shown is loaded again from the server.
+  const selectMode = async (source) => {
+    setError("");
+    try {
+      setInfo(await api.setMode(source));
+      setRuns({}); setVerify(null); setStatus("");
+      const [s, g] = await Promise.all([api.getScenarios(), api.getAgents()]);
+      setScenarios(s.scenarios); setRegistry(g);
+      await refresh();
+    } catch (e) {
+      setError(e.message);
+      api.getInfo().then(setInfo).catch(() => {});
+    }
+  };
 
   const runBoth = async () => {
     setBusy(true); setError(""); setVerify(null);
@@ -102,6 +121,7 @@ export default function App() {
         <h1>No tool, no promise</h1>
         <span className="mode" data-testid="mode-badge" title="Scripted agent, no model, no tenant, no network">{mode === "se-mock" ? "HOSTED SIMULATION: mock only" : "DEMO: mock only"}</span>
         <p className="tagline">The tool set is the authorization boundary.</p>
+        <ModeToggle info={info} onSelect={selectMode} />
         <button type="button" className="btn" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-pressed={theme === "dark"}>
           {theme === "dark" ? "Light theme" : "Dark theme"}
         </button>

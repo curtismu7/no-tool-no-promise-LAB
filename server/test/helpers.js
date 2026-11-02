@@ -16,7 +16,7 @@ const isFree = (port) => new Promise((resolve) => {
 });
 
 // Start the app on a free port in 5380-5399. Retries when another test file takes the port first.
-export async function startTestServer({ runtime, env = {}, webDist = null } = {}) {
+export async function startTestServer({ runtime, env = {}, webDist = null, realAvailable } = {}) {
   const { startHttpServer } = await loadSrc('app.js');
   const { createRuntime } = await loadSrc('runtime.js');
   const rt = runtime ?? createRuntime();
@@ -24,7 +24,7 @@ export async function startTestServer({ runtime, env = {}, webDist = null } = {}
   for (let i = 0; i < 40; i += 1) {
     const port = FIRST + ((start - FIRST + i) % (LAST - FIRST + 1));
     if (!(await isFree(port))) continue;
-    try { return await startHttpServer({ port, host: '127.0.0.1', env, runtime: rt, webDist }); } catch (e) { if (e.code !== 'EADDRINUSE') throw e; }
+    try { return await startHttpServer({ port, host: '127.0.0.1', env, runtime: rt, webDist, realAvailable }); } catch (e) { if (e.code !== 'EADDRINUSE') throw e; }
   }
   throw new Error('no free port in 5380-5399');
 }

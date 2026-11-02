@@ -19,15 +19,26 @@ export const DEFAULT_WEB_DIST = path.resolve(path.dirname(fileURLToPath(import.m
 export const UI_CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
-const bad = (res, message, status = 400) => res.status(status).json({ error: status === 404 ? 'not_found' : 'bad_request', message });
+const bad = (res, message, status = 400) => res.status(status).json({ error: status === 404 ? 'not_found' : status === 403 ? 'forbidden' : status === 409 ? 'conflict' : 'bad_request', message });
 const API_HEADERS = { 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'", 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' };
 
 const isPlain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v) && [Object.prototype, null].includes(Object.getPrototypeOf(v));
 const RUN_KEYS = new Set(['scenario', 'profile', 'wording', 'message']);
 
+// Mock/Real (owner rule 19). This demo is mock only by design: a scripted planner, no tenant, no model, nothing to call.
+// `realAvailable` is a test-only seam (never read from the environment) so the switch itself can be tested.
+// The hosted build is the existing MODE=se-mock: fail-closed Mock, it cannot be switched.
+const NO_REAL = 'Real mode is not available: this demo is mock only by design (a scripted agent, no tenant, no model, nothing real to call).';
+const HOSTED_REASON = 'The hosted build is Mock only and cannot be switched.';
+const SOURCES = ['mock', 'real'];
+
 // webDist: directory with the built UI (web/dist). null disables static serving.
 // mode: 'local' (default) or 'se-mock'. workspaceOptions: { max, ttlMs, now } for the se-mock registry (tests lower them).
-export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_WEB_DIST, mode = 'local', workspaceOptions = {} } = {}) {
+export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_WEB_DIST, mode = 'local', workspaceOptions = {}, realAvailable = false } = {}) {
+  const hosted = mode === 'se-mock';
+  const canReal = realAvailable === true && !hosted;
+  const modeState = { source: canReal ? 'real' : 'mock' }; // default: Real if configured, else Mock
+  const info = () => ({ source: hosted ? 'mock' : modeState.source, realAvailable: canReal, hosted, realReason: hosted ? HOSTED_REASON : canReal ? null : NO_REAL });
   const app = express();
   app.disable('x-powered-by');
   app.use(hostGuard);
@@ -60,6 +71,17 @@ export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_
   api.use('/health', health.router);
   api.use(workspaceGuard);
   api.use(express.json({ limit: '4kb' }));
+
+  // The switch is for the whole app (in the hosted build it is refused). In-memory, so no restart.
+  api.get('/info', (_req, res) => res.json(info()));
+  api.post('/mode', (req, res) => {
+    const b = req.body;
+    if (!isPlain(b) || Object.keys(b).length !== 1 || !SOURCES.includes(b.source)) return bad(res, 'body must be exactly {"source": "mock" or "real"}');
+    if (hosted) return bad(res, HOSTED_REASON, 403);
+    if (b.source === 'real' && !canReal) return bad(res, NO_REAL, 409);
+    modeState.source = b.source;
+    return res.json(info());
+  });
 
   api.get('/scenarios', (req, res) => res.json({ scenarios: req.runtime.scenarios() }));
   api.get('/agents', (_req, res) => res.json(registryView()));
@@ -117,12 +139,12 @@ export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_
 }
 
 // Boot on `port`. Refuses a non-loopback host unless NTNP_BIND is set. Refuses an unknown MODE or a live flag in se-mock.
-export async function startHttpServer({ port = serverPort(), host = bindHost(), env = process.env, runtime = createRuntime(), webDist = DEFAULT_WEB_DIST, workspaceOptions } = {}) {
+export async function startHttpServer({ port = serverPort(), host = bindHost(), env = process.env, runtime = createRuntime(), webDist = DEFAULT_WEB_DIST, workspaceOptions, realAvailable } = {}) {
   assertBindAllowed(host, env);
   const mode = assertModeAllowed(env);
   const health = createHealth({ env });
   return new Promise((resolve, reject) => {
-    const httpServer = createApp({ runtime, health, webDist, mode, workspaceOptions }).listen(port, host);
+    const httpServer = createApp({ runtime, health, webDist, mode, workspaceOptions, realAvailable }).listen(port, host);
     httpServer.once('error', (e) => { health.stop(); reject(e); });
     httpServer.once('listening', () => {
       const { port: bound } = httpServer.address();

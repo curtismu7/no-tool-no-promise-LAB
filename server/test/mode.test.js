@@ -60,3 +60,71 @@ test('health reports the mode and stays demo-health/1 in both modes', async (t) 
     await srv.close();
   }
 });
+
+// Mock/Real switch (owner rule 19). This demo is mock only by design, so Real is refused unless the test-only
+// `realAvailable` option is on (never read from the environment). Each test runs under the network guard.
+const { guardNetwork } = await import('./netguard.js');
+
+async function withSwitch(opts, fn) {
+  const guard = guardNetwork();
+  const srv = await startTestServer(opts);
+  const mode = (body) => request(srv.port, 'POST', '/api/mode', { body });
+  const info = async () => (await request(srv.port, 'GET', '/api/info')).json;
+  try { await fn({ srv, mode, info }); } finally { await srv.close(); guard.restore(); }
+  assert.deepEqual(guard.attempts, [], 'the switch made no outbound attempt');
+}
+
+test('GET /api/info: Mock by default, Real unavailable with the reason, not hosted', () => withSwitch({}, async ({ info }) => {
+  const i = await info();
+  assert.deepEqual({ source: i.source, realAvailable: i.realAvailable, hosted: i.hosted }, { source: 'mock', realAvailable: false, hosted: false });
+  assert.match(i.realReason, /mock only by design/);
+}));
+
+test('Real without settings: 409, the mode stays Mock; Mock is accepted', () => withSwitch({}, async ({ mode, info }) => {
+  const r = await mode({ source: 'real' });
+  assert.equal(r.status, 409);
+  assert.match(r.json.message, /mock only by design/);
+  assert.equal((await info()).source, 'mock');
+  const m = await mode({ source: 'mock' });
+  assert.equal(m.status, 200);
+  assert.equal(m.json.source, 'mock');
+}));
+
+test('POST /api/mode needs exactly {source: "mock" | "real"}: anything else is 400', () => withSwitch({ realAvailable: true }, async ({ srv, mode, info }) => {
+  for (const body of [{}, { source: 'live' }, { mode: 'mock' }, { source: 'mock', extra: 1 }, { source: 1 }, [], 'null', '[]', '{not json']) {
+    assert.equal((await mode(body)).status, 400, JSON.stringify(body));
+  }
+  assert.equal((await request(srv.port, 'POST', '/api/mode')).status, 400, 'no body');
+  assert.equal((await info()).source, 'real', 'a refused body changes nothing');
+}));
+
+test('with Real configured (test option): Real is the default and the switch goes both ways without a restart; the data the page shows changes', () => withSwitch({ realAvailable: true }, async ({ srv, mode, info }) => {
+  const first = await info();
+  assert.deepEqual({ source: first.source, realAvailable: first.realAvailable, realReason: first.realReason }, { source: 'real', realAvailable: true, realReason: null });
+  const toMock = await mode({ source: 'mock' });
+  assert.equal(toMock.status, 200);
+  assert.equal(toMock.json.source, 'mock');
+  const mocked = await info();
+  assert.equal(mocked.source, 'mock');
+  assert.notDeepEqual(mocked, first, 'the mode-dependent response differs after the switch');
+  const back = await mode({ source: 'real' });
+  assert.equal(back.status, 200);
+  assert.equal(back.json.source, 'real');
+  assert.equal((await info()).source, 'real');
+  assert.equal((await request(srv.port, 'GET', '/api/scenarios')).status, 200, 'the data endpoints keep answering after a switch');
+}));
+
+test('hosted build (MODE=se-mock): fail-closed Mock; every switch is 403 and Real is reported unavailable with the reason', () => withSwitch({ env: { MODE: 'se-mock' }, realAvailable: true }, async ({ mode, info }) => {
+  const i = await info();
+  assert.deepEqual({ source: i.source, realAvailable: i.realAvailable, hosted: i.hosted }, { source: 'mock', realAvailable: false, hosted: true });
+  assert.match(i.realReason, /hosted build is Mock only/);
+  assert.equal((await mode({ source: 'real' })).status, 403);
+  assert.equal((await mode({ source: 'mock' })).status, 403);
+  assert.equal((await mode({ source: 'bogus' })).status, 400, 'a malformed body is still 400 before the hosted check');
+  assert.equal((await info()).source, 'mock');
+}));
+
+test('the mode is per app instance, not module-global', async () => {
+  await withSwitch({ realAvailable: true }, async ({ mode, info }) => { await mode({ source: 'mock' }); assert.equal((await info()).source, 'mock'); });
+  await withSwitch({ realAvailable: true }, async ({ info }) => assert.equal((await info()).source, 'real'));
+});
