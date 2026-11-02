@@ -33,6 +33,7 @@ async function readHealth(tries = 3) {
 }
 
 export default function App() {
+  const [info, setInfo] = useState(null);
   const [theme, setTheme] = useState(initialTheme);
   const [presenting, setPresenting] = useState(false);
   const [scenarios, setScenarios] = useState([]);
@@ -48,7 +49,6 @@ export default function App() {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const [mode, setMode] = useState(() => buildMode() ?? "local");
-  const [info, setInfo] = useState(null); // { source, realAvailable, hosted, realReason } from GET /api/info
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -69,27 +69,23 @@ export default function App() {
         setScenarios(s.scenarios); setRegistry(g);
         // A hosted build never asks health for its mode. A local build asks; if health cannot be read, it stays local.
         if (!buildMode()) readHealth().then((h) => { if (live && h?.mode) setMode(h.mode); });
+        api.getInfo().then((i) => { if (live) setInfo(i); }).catch(() => {});
         await refresh();
       } catch (e) { if (live) setError(`Could not reach the server: ${e.message}`); }
     })();
     return () => { live = false; };
   }, [refresh]);
 
-  useEffect(() => { api.getInfo().then(setInfo).catch(() => setInfo(null)); }, []);
-
-  // After a Mock/Real switch everything shown is loaded again from the server.
-  const selectMode = async (source) => {
+  // Rule 19: the Mock/Real toggle. A switch changes what every call answers, so everything shown is loaded again.
+  const onSelectMode = async (source) => {
     setError("");
     try {
       setInfo(await api.setMode(source));
-      setRuns({}); setVerify(null); setStatus("");
+      setRuns({}); setVerify(null);
       const [s, g] = await Promise.all([api.getScenarios(), api.getAgents()]);
       setScenarios(s.scenarios); setRegistry(g);
       await refresh();
-    } catch (e) {
-      setError(e.message);
-      api.getInfo().then(setInfo).catch(() => {});
-    }
+    } catch (e) { setError(e.message); }
   };
 
   const runBoth = async () => {
@@ -120,8 +116,8 @@ export default function App() {
       <header className="top">
         <h1>No tool, no promise</h1>
         <span className="mode" data-testid="mode-badge" title="Scripted agent, no model, no tenant, no network">{mode === "se-mock" ? "HOSTED SIMULATION: mock only" : "DEMO: mock only"}</span>
+        <ModeToggle info={info} onSelect={onSelectMode} />
         <p className="tagline">The tool set is the authorization boundary.</p>
-        <ModeToggle info={info} onSelect={selectMode} />
         <button type="button" className="btn" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-pressed={theme === "dark"}>
           {theme === "dark" ? "Light theme" : "Dark theme"}
         </button>

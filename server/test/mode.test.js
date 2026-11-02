@@ -78,13 +78,13 @@ test('GET /api/info: Mock by default, Real unavailable with the reason, no hoste
   const i = await info();
   assert.deepEqual(Object.keys(i).sort(), ['realAvailable', 'realReason', 'source']);
   assert.deepEqual({ source: i.source, realAvailable: i.realAvailable }, { source: 'mock', realAvailable: false });
-  assert.match(i.realReason, /mock only by design/);
+  assert.match(i.realReason, /no live version/);
 }));
 
 test('Real without settings: 409, the mode stays Mock; Mock is accepted', () => withSwitch({}, async ({ mode, info }) => {
   const r = await mode({ source: 'real' });
   assert.equal(r.status, 409);
-  assert.match(r.json.message, /mock only by design/);
+  assert.match(r.json.message, /no live version/);
   assert.equal((await info()).source, 'mock');
   const m = await mode({ source: 'mock' });
   assert.equal(m.status, 200);
