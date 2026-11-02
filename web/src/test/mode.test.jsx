@@ -113,7 +113,7 @@ test("one failed health read is retried, so the hosted banner still shows", asyn
 });
 
 // Mock/Real toggle (owner rule 19).
-const MOCK_INFO = { source: "mock", realAvailable: false, hosted: false, realReason: "Real mode is not available: this demo is mock only by design." };
+const MOCK_INFO = { source: "mock", realAvailable: false, realReason: "Real mode is not available: this demo is mock only by design." };
 
 function toggleFetch(initial) {
   let info = initial;
@@ -124,7 +124,7 @@ function toggleFetch(initial) {
     const ok = (b, status = 200) => ({ ok: status < 400, status, json: async () => b });
     if (url === "/api/info") return ok(info);
     if (url === "/api/mode") { info = { ...info, source: JSON.parse(init.body).source }; return ok(info); }
-    if (url === "/api/health") return ok({ schema: "demo-health/1", state: "ready", mode: info.hosted ? "se-mock" : "local" });
+    if (url === "/api/health") return ok({ schema: "demo-health/1", state: "ready", mode: "local" });
     if (url === "/api/scenarios") return ok(scenarios);
     if (url === "/api/agents") return ok(registry);
     if (url === "/api/ledger") return ok(ledger);
@@ -144,14 +144,6 @@ test("the header toggle: Mock pressed, Real disabled with the server's reason as
   expect(real).toHaveAttribute("aria-pressed", "false");
   expect(real).toBeDisabled();
   expect(real).toHaveAttribute("title", expect.stringMatching(/mock only by design/));
-});
-
-test("the hosted build shows Mock pressed and Real disabled with the hosted reason", async () => {
-  toggleFetch({ ...MOCK_INFO, hosted: true, realReason: "The hosted build is Mock only and cannot be switched." });
-  render(<App />);
-  await waitFor(() => expect(screen.getByTestId("mode-mock")).toHaveAttribute("aria-pressed", "true"));
-  expect(screen.getByTestId("mode-real")).toBeDisabled();
-  expect(screen.getByTestId("mode-real")).toHaveAttribute("title", expect.stringMatching(/hosted build is Mock only/));
 });
 
 test("switching posts the mode, then loads the scenarios, tool registry, ledger, reviews and audit again; the pressed button follows", async () => {

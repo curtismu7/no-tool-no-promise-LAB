@@ -50,8 +50,8 @@ The server serves `web/dist` with a same-origin-only Content-Security-Policy (`d
 | Request | What it does |
 | --- | --- |
 | `GET /api/health` | `demo-health/1` |
-| `GET /api/info` | `{ source, realAvailable, hosted, realReason }`: the current Mock/Real source and why Real is or is not available |
-| `POST /api/mode` | `{ "source": "mock" or "real" }` and nothing else: anything else is `400`; `real` is `409` (nothing real to call); any switch on the hosted build is `403` |
+| `GET /api/info` | `{ source, realAvailable, realReason }`: the current Mock/Real source and why Real is or is not available |
+| `POST /api/mode` | `{ "source": "mock" or "real" }` and nothing else: anything else is `400`; `real` is `409` (nothing real to call) |
 | `GET /api/scenarios` | the five scenarios and what each tool set should produce |
 | `GET /api/agents` | the per-agent tool registry; tools each agent may call and the ones it is denied |
 | `POST /api/runs` | `{ scenario, profile }` plus optional `wording` (`careful` or `loose`) and `message` (up to 500 characters). No other field exists; there is no field that names an agent or a tool |
@@ -67,9 +67,8 @@ In `MODE=se-mock` every route except `GET /api/health` works inside the workspac
 
 Every page header has a **Mock** / **Real** toggle (the pressed button, `aria-pressed="true"`, is the current mode). This demo is **Mock only by design**: the agent is a scripted planner and the server calls no tenant, model or network, so there is no real server for Real to use. `realAvailable` is always `false`, the **Real** button is disabled, and its tooltip says why.
 
-- `GET /api/info` returns `source` (`mock` here), `realAvailable`, `hosted` and `realReason`. `POST /api/mode` takes exactly `{ "source": "mock" | "real" }`; see the table above for the refusals.
+- `GET /api/info` returns `source` (`mock` here), `realAvailable` and `realReason`. `POST /api/mode` takes exactly `{ "source": "mock" | "real" }`; see the table above for the refusals.
 - The mode lives in memory, so switching needs no restart. After a successful switch the page loads its scenarios, tool registry, ledger, reviews and audit again and clears the last run.
-- Hosted build: the existing `MODE=se-mock` is the hosted flag (no new variable). The server then answers `403` to any switch, `hosted` is `true`, and the Real tooltip gives the reason.
 - Nothing in the environment can make Real available. The tests use a test-only `realAvailable` option on `createApp` / `startHttpServer` (never read from the environment) to prove the switch goes both ways.
 
 Scenarios: `fee-waiver`, `refund-over-limit`, `change-of-terms`, `prompt-injected`, `needs-approval`. Profiles: `ungoverned`, `governed`. In every scenario the governed profile ends with zero commitments; the ungoverned profile commits in all but `needs-approval`, where the tool exists for both agents but only creates a pending approval.
