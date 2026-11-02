@@ -17,6 +17,8 @@ async function call(path, method = "GET", body) {
 }
 
 export const getHealth = () => call("/api/health");
+export const getInfo = () => call("/api/info");
+export const setMode = (source) => call("/api/mode", "POST", { source });
 export const getScenarios = () => call("/api/scenarios");
 export const getAgents = () => call("/api/agents");
 export const getLedger = () => call("/api/ledger");
