@@ -19,23 +19,15 @@ export const DEFAULT_WEB_DIST = path.resolve(path.dirname(fileURLToPath(import.m
 export const UI_CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
-const bad = (res, message, status = 400) => res.status(status).json({ error: status === 404 ? 'not_found' : status === 409 ? 'conflict' : 'bad_request', message });
+const bad = (res, message, status = 400) => res.status(status).json({ error: status === 404 ? 'not_found' : 'bad_request', message });
 const API_HEADERS = { 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'", 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' };
 
 const isPlain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v) && [Object.prototype, null].includes(Object.getPrototypeOf(v));
 const RUN_KEYS = new Set(['scenario', 'profile', 'wording', 'message']);
 
-// Mock/Real (owner rule 19). This demo is mock only by design: a scripted planner, no tenant, no model, nothing to call.
-// `realAvailable` is a test-only seam (never read from the environment) so the switch itself can be tested.
-const NO_REAL = 'Real mode is not available: this demo is mock only by design (a scripted agent, no tenant, no model, nothing real to call).';
-const SOURCES = ['mock', 'real'];
-
 // webDist: directory with the built UI (web/dist). null disables static serving.
 // mode: 'local' (default) or 'se-mock'. workspaceOptions: { max, ttlMs, now } for the se-mock registry (tests lower them).
 export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_WEB_DIST, mode = 'local', workspaceOptions = {}, realAvailable = false } = {}) {
-  const canReal = realAvailable === true;
-  const modeState = { source: canReal ? 'real' : 'mock' }; // default: Real if configured, else Mock
-  const info = () => ({ source: modeState.source, realAvailable: canReal, realReason: canReal ? null : NO_REAL });
   const app = express();
   app.disable('x-powered-by');
   app.use(hostGuard);
@@ -69,14 +61,19 @@ export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_
   api.use(workspaceGuard);
   api.use(express.json({ limit: '4kb' }));
 
-  // The switch is for the whole app. In-memory, so no restart.
-  api.get('/info', (_req, res) => res.json(info()));
+  // Rule 19: the Mock/Real toggle's API. This app is mock only (no tenant, no model, no network), so Real is never available.
+  // The mode is in memory, so a switch needs no restart. `realAvailable` is a test-only seam (never read from the environment).
+  const NO_REAL = 'Real is not available: this app has no live version (no tenant, no model, no network). Mock is the whole demo.';
+  const canReal = realAvailable === true;
+  const modeState = { source: canReal ? 'real' : 'mock' }; // default: Real if configured, else Mock
+  const infoBody = () => ({ source: modeState.source, realAvailable: canReal, realReason: canReal ? null : NO_REAL });
+  api.get('/info', (_req, res) => res.json(infoBody()));
   api.post('/mode', (req, res) => {
     const b = req.body;
-    if (!isPlain(b) || Object.keys(b).length !== 1 || !SOURCES.includes(b.source)) return bad(res, 'body must be exactly {"source": "mock" or "real"}');
+    if (!isPlain(b) || Object.keys(b).length !== 1 || !['mock', 'real'].includes(b.source)) return bad(res, 'body must be exactly {source: "mock" or "real"}');
     if (b.source === 'real' && !canReal) return bad(res, NO_REAL, 409);
     modeState.source = b.source;
-    return res.json(info());
+    return res.json(infoBody());
   });
 
   api.get('/scenarios', (req, res) => res.json({ scenarios: req.runtime.scenarios() }));

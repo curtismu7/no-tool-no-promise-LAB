@@ -143,7 +143,7 @@ test("the header toggle: Mock pressed, Real disabled with the server's reason as
   expect(real.closest("header.top")).not.toBeNull();
   expect(real).toHaveAttribute("aria-pressed", "false");
   expect(real).toBeDisabled();
-  expect(real).toHaveAttribute("title", expect.stringMatching(/mock only by design/));
+  expect(real).toHaveAttribute("title", expect.stringMatching(/no live version/));
 });
 
 test("switching posts the mode, then loads the scenarios, tool registry, ledger, reviews and audit again; the pressed button follows", async () => {
