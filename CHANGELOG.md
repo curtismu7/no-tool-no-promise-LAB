@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Mock/Real toggle in the header, `GET /api/info`, `POST /api/mode` (owner rule 19). Mock only by design: Real is disabled (409 from the API); the `MODE=se-mock` hosted build answers 403 to any switch. Re-vendored `web/src/standalone-ui.css` from the canonical copy (comment line only).
+- Mock/Real toggle in the header, `GET /api/info`, `POST /api/mode` (owner rule 19). Mock only by design: Real is disabled (409 from the API). Re-vendored `web/src/standalone-ui.css` from the canonical copy (comment line only).
 
 - Hosted mock build for the SE cluster (rule 18): `MODE=local` (default, unchanged) or `MODE=se-mock`. In se-mock, state is per workspace (`X-Workspace-Id`, capped at 50, idle TTL 30 minutes, default never evicted), any live flag is refused at startup and by the doctor, `GET /api/health` reports `mode`, and the UI shows a HOSTED SIMULATION badge and banner. `k8s/` has the Deployment, Service, Ingress and a `deploy.sh` that needs `OWNER_APPROVED=1` and renders with `--dry-run` only. `docs/k8s.md` has the state inventory and residual risks. Tests: `server/test/mode.test.js`, `server/test/workspace.test.js`, `scripts/k8s.test.mjs`, and `web/src/test/mode.test.jsx`.
 

@@ -74,9 +74,10 @@ async function withSwitch(opts, fn) {
   assert.deepEqual(guard.attempts, [], 'the switch made no outbound attempt');
 }
 
-test('GET /api/info: Mock by default, Real unavailable with the reason, not hosted', () => withSwitch({}, async ({ info }) => {
+test('GET /api/info: Mock by default, Real unavailable with the reason, no hosted field', () => withSwitch({}, async ({ info }) => {
   const i = await info();
-  assert.deepEqual({ source: i.source, realAvailable: i.realAvailable, hosted: i.hosted }, { source: 'mock', realAvailable: false, hosted: false });
+  assert.deepEqual(Object.keys(i).sort(), ['realAvailable', 'realReason', 'source']);
+  assert.deepEqual({ source: i.source, realAvailable: i.realAvailable }, { source: 'mock', realAvailable: false });
   assert.match(i.realReason, /mock only by design/);
 }));
 
@@ -112,16 +113,6 @@ test('with Real configured (test option): Real is the default and the switch goe
   assert.equal(back.json.source, 'real');
   assert.equal((await info()).source, 'real');
   assert.equal((await request(srv.port, 'GET', '/api/scenarios')).status, 200, 'the data endpoints keep answering after a switch');
-}));
-
-test('hosted build (MODE=se-mock): fail-closed Mock; every switch is 403 and Real is reported unavailable with the reason', () => withSwitch({ env: { MODE: 'se-mock' }, realAvailable: true }, async ({ mode, info }) => {
-  const i = await info();
-  assert.deepEqual({ source: i.source, realAvailable: i.realAvailable, hosted: i.hosted }, { source: 'mock', realAvailable: false, hosted: true });
-  assert.match(i.realReason, /hosted build is Mock only/);
-  assert.equal((await mode({ source: 'real' })).status, 403);
-  assert.equal((await mode({ source: 'mock' })).status, 403);
-  assert.equal((await mode({ source: 'bogus' })).status, 400, 'a malformed body is still 400 before the hosted check');
-  assert.equal((await info()).source, 'mock');
 }));
 
 test('the mode is per app instance, not module-global', async () => {

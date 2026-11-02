@@ -1,5 +1,5 @@
 // Mock / Real switch in the page header. This demo is mock only by design: Real is disabled (the server answers 409)
-// and its tooltip carries the server's reason. The hosted build cannot be switched at all.
+// and its tooltip carries the server's reason.
 export default function ModeToggle({ info, onSelect }) {
   const loading = !info;
   const source = info?.source;
