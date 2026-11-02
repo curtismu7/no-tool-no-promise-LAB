@@ -17,6 +17,8 @@ k8s/deploy.sh --dry-run # renders the SE manifests; the real deploy needs OWNER_
 npm run dev          # Vite on 5360, proxying /api to 5350
 ```
 
+Mock/Real: mock only by design. Every page header has a Mock / Real toggle; `GET /api/info` and `POST /api/mode {source}` back it (Real is 409, any switch on the `MODE=se-mock` hosted build is 403). Tests use the test-only `realAvailable` option, never an env var. Details in the README.
+
 Port 5350 (`NTNP_PORT`, must be in 5350-5399; tests use 5380-5399). Docker is OrbStack only, never Docker Desktop: `docker compose up --build -d` publishes `127.0.0.1:5350`.
 
 ## Rules that bite here
@@ -38,7 +40,7 @@ Port 5350 (`NTNP_PORT`, must be in 5350-5399; tests use 5380-5399). Docker is Or
 - `server/test/planner.test.js`: inert and redacted text, deterministic planner.
 - `server/test/mutation.test.js`: removes each check from a copy of `src/` and the tests must fail.
 - `scripts/compose.test.mjs`: container publishes `127.0.0.1` only. `scripts/docs.test.mjs`: docs match the code.
-- `server/test/mode.test.js`, `server/test/workspace.test.js`: MODE refusals, workspace isolation, hostile ids, cap and TTL. `scripts/k8s.test.mjs`: manifests keep their safety properties (text checks, no cluster).
+- `server/test/mode.test.js`, `server/test/workspace.test.js`: MODE refusals, the Mock/Real switch (`GET /api/info`, `POST /api/mode`: 400, 409, 403, both directions), workspace isolation, hostile ids, cap and TTL. `scripts/k8s.test.mjs`: manifests keep their safety properties (text checks, no cluster).
 - The table with rule-to-test mapping is [docs/safety.md](docs/safety.md); keep it in step.
 
 ## Shelf and content pack
