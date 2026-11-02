@@ -7,6 +7,7 @@ import Risk from "./components/Risk.jsx";
 import Audit from "./components/Audit.jsx";
 import Flow from "./components/Flow.jsx";
 import ModeBanner from "./components/ModeBanner.jsx";
+import ModeToggle from "./components/ModeToggle.jsx";
 
 const EMPTY_LEDGER = { count: 0, entries: [] };
 const EMPTY_REVIEWS = { reviews: [], approvals: [] };
@@ -32,6 +33,7 @@ async function readHealth(tries = 3) {
 }
 
 export default function App() {
+  const [info, setInfo] = useState(null);
   const [theme, setTheme] = useState(initialTheme);
   const [presenting, setPresenting] = useState(false);
   const [scenarios, setScenarios] = useState([]);
@@ -67,11 +69,24 @@ export default function App() {
         setScenarios(s.scenarios); setRegistry(g);
         // A hosted build never asks health for its mode. A local build asks; if health cannot be read, it stays local.
         if (!buildMode()) readHealth().then((h) => { if (live && h?.mode) setMode(h.mode); });
+        api.getInfo().then((i) => { if (live) setInfo(i); }).catch(() => {});
         await refresh();
       } catch (e) { if (live) setError(`Could not reach the server: ${e.message}`); }
     })();
     return () => { live = false; };
   }, [refresh]);
+
+  // Rule 19: the Mock/Real toggle. A switch changes what every call answers, so everything shown is loaded again.
+  const onSelectMode = async (source) => {
+    setError("");
+    try {
+      setInfo(await api.setMode(source));
+      setRuns({}); setVerify(null);
+      const [s, g] = await Promise.all([api.getScenarios(), api.getAgents()]);
+      setScenarios(s.scenarios); setRegistry(g);
+      await refresh();
+    } catch (e) { setError(e.message); }
+  };
 
   const runBoth = async () => {
     setBusy(true); setError(""); setVerify(null);
@@ -101,6 +116,7 @@ export default function App() {
       <header className="top">
         <h1>No tool, no promise</h1>
         <span className="mode" data-testid="mode-badge" title="Scripted agent, no model, no tenant, no network">{mode === "se-mock" ? "HOSTED SIMULATION: mock only" : "DEMO: mock only"}</span>
+        <ModeToggle info={info} onSelect={onSelectMode} />
         <p className="tagline">The tool set is the authorization boundary.</p>
         <button type="button" className="btn" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-pressed={theme === "dark"}>
           {theme === "dark" ? "Light theme" : "Dark theme"}

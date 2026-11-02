@@ -61,6 +61,18 @@ export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_
   api.use(workspaceGuard);
   api.use(express.json({ limit: '4kb' }));
 
+  // Rule 19: the Mock/Real toggle's API. This app is mock only (no tenant, no model, no network), so Real is never available.
+  const NO_REAL = 'Real is not available: this app has no live version (no tenant, no model, no network). Mock is the whole demo.';
+  const infoBody = () => ({ mode, hosted: mode === 'se-mock', source: 'mock', realAvailable: false });
+  api.get('/info', (_req, res) => res.json(infoBody()));
+  api.post('/mode', (req, res) => {
+    const b = req.body;
+    if (!isPlain(b) || Object.keys(b).length !== 1 || !['mock', 'real'].includes(b.source)) return bad(res, 'body must be exactly {source: "mock" or "real"}');
+    if (mode === 'se-mock') return bad(res, 'The hosted build is Mock only and cannot be switched.', 403);
+    if (b.source === 'real') return bad(res, NO_REAL, 409);
+    return res.json(infoBody());
+  });
+
   api.get('/scenarios', (req, res) => res.json({ scenarios: req.runtime.scenarios() }));
   api.get('/agents', (_req, res) => res.json(registryView()));
 
