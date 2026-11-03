@@ -1,5 +1,7 @@
 # No tool, no promise LAB
 
+Tier: Demo.
+
 A support chat agent is asked to waive a fee. If it has a tool that can waive fees, it can bind the company. If it has no such tool, it cannot, whatever it is told and whatever it says. This demo runs the same scripted agent twice, with two different tool sets, and shows what the company is actually committed to.
 
 Repo: https://github.com/ping-sandbox/no-tool-no-promise-LAB
