@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { assertModeAllowed } from './config.js';
 import { createHealth } from './health.js';
+import { loadCustomer, DEFAULT_CUSTOMER } from './customer.js';
 import { RunError, createRuntime } from './runtime.js';
 import { assertBindAllowed, bindHost, credentialGuard, hostGuard, originGuard, serverPort } from './safety.js';
 import { registryView } from './tools.js';
@@ -27,7 +28,7 @@ const RUN_KEYS = new Set(['scenario', 'profile', 'wording', 'message']);
 
 // webDist: directory with the built UI (web/dist). null disables static serving.
 // mode: 'local' (default) or 'se-mock'. workspaceOptions: { max, ttlMs, now } for the se-mock registry (tests lower them).
-export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_WEB_DIST, mode = 'local', workspaceOptions = {}, realAvailable = false } = {}) {
+export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_WEB_DIST, mode = 'local', workspaceOptions = {}, realAvailable = false, customer = loadCustomer() } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(hostGuard);
@@ -76,7 +77,7 @@ export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_
     return res.json(infoBody());
   });
 
-  api.get('/scenarios', (req, res) => res.json({ scenarios: req.runtime.scenarios() }));
+  api.get('/scenarios', (req, res) => res.json({ scenarios: req.runtime.scenarios(), customer: { ...DEFAULT_CUSTOMER, ...customer } }));
   api.get('/agents', (_req, res) => res.json(registryView()));
 
   api.post('/runs', (req, res) => {
