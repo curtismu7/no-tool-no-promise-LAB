@@ -27,7 +27,7 @@ const RUN_KEYS = new Set(['scenario', 'profile', 'wording', 'message']);
 
 // webDist: directory with the built UI (web/dist). null disables static serving.
 // mode: 'local' (default) or 'se-mock'. workspaceOptions: { max, ttlMs, now } for the se-mock registry (tests lower them).
-export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_WEB_DIST, mode = 'local', workspaceOptions = {} } = {}) {
+export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_WEB_DIST, mode = 'local', workspaceOptions = {}, realAvailable = false } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(hostGuard);
@@ -62,14 +62,17 @@ export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_
   api.use(express.json({ limit: '4kb' }));
 
   // Rule 19: the Mock/Real toggle's API. This app is mock only (no tenant, no model, no network), so Real is never available.
+  // The mode is in memory, so a switch needs no restart. `realAvailable` is a test-only seam (never read from the environment).
   const NO_REAL = 'Real is not available: this app has no live version (no tenant, no model, no network). Mock is the whole demo.';
-  const infoBody = () => ({ mode, hosted: mode === 'se-mock', source: 'mock', realAvailable: false });
+  const canReal = realAvailable === true;
+  const modeState = { source: canReal ? 'real' : 'mock' }; // default: Real if configured, else Mock
+  const infoBody = () => ({ source: modeState.source, realAvailable: canReal, realReason: canReal ? null : NO_REAL });
   api.get('/info', (_req, res) => res.json(infoBody()));
   api.post('/mode', (req, res) => {
     const b = req.body;
     if (!isPlain(b) || Object.keys(b).length !== 1 || !['mock', 'real'].includes(b.source)) return bad(res, 'body must be exactly {source: "mock" or "real"}');
-    if (mode === 'se-mock') return bad(res, 'The hosted build is Mock only and cannot be switched.', 403);
-    if (b.source === 'real') return bad(res, NO_REAL, 409);
+    if (b.source === 'real' && !canReal) return bad(res, NO_REAL, 409);
+    modeState.source = b.source;
     return res.json(infoBody());
   });
 
@@ -129,12 +132,12 @@ export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_
 }
 
 // Boot on `port`. Refuses a non-loopback host unless NTNP_BIND is set. Refuses an unknown MODE or a live flag in se-mock.
-export async function startHttpServer({ port = serverPort(), host = bindHost(), env = process.env, runtime = createRuntime(), webDist = DEFAULT_WEB_DIST, workspaceOptions } = {}) {
+export async function startHttpServer({ port = serverPort(), host = bindHost(), env = process.env, runtime = createRuntime(), webDist = DEFAULT_WEB_DIST, workspaceOptions, realAvailable } = {}) {
   assertBindAllowed(host, env);
   const mode = assertModeAllowed(env);
   const health = createHealth({ env });
   return new Promise((resolve, reject) => {
-    const httpServer = createApp({ runtime, health, webDist, mode, workspaceOptions }).listen(port, host);
+    const httpServer = createApp({ runtime, health, webDist, mode, workspaceOptions, realAvailable }).listen(port, host);
     httpServer.once('error', (e) => { health.stop(); reject(e); });
     httpServer.once('listening', () => {
       const { port: bound } = httpServer.address();
