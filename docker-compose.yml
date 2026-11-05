@@ -9,6 +9,7 @@ services:
     ports:
       - "127.0.0.1:${HOST_PORT:-5350}:5350"
     environment:
+      SHELF_URL: ${SHELF_URL:-}
       NTNP_PORT: "5350"
       NTNP_BIND: 0.0.0.0
     read_only: true
