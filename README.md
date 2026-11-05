@@ -13,6 +13,35 @@ Everything is mock. There is no tenant, no LLM and no network: the "agent" is a 
 
 **Status: steps ND0 (server core), ND1 (web UI), ND2 (fix pass) and ND3 (packaging).** The UI is served by the server itself. The Docker image was built and run by hand under OrbStack (ND2, and again in ND3 with the checks listed under Verified); no CI runs it and no test starts the container. There is a Learning Hub content pack and a demo-shelf entry (below).
 
+## Run from a clone
+
+Prerequisites: Node 26. Docker (OrbStack) only for the Docker form.
+
+```
+git clone https://github.com/curtismu7/no-tool-no-promise-LAB.git
+cd no-tool-no-promise-LAB
+npm ci
+npm run build
+npm run doctor
+npm start
+```
+
+## Ports, and what to do if the port is taken
+
+```
+Ports: no-tool-no-promise-LAB listens on 5350 (set with PORT, default 5350).
+Port range for this app: 5350-5399.
+
+If the port is taken:
+1. Find what is using it:
+   lsof -iTCP:5350 -sTCP:LISTEN -n -P
+2. If it is an old copy of this app, stop that process: kill <PID>.
+3. If it is something else, stop it, or start this app on another port:
+   PORT=<other port> npm start
+```
+
+Other variable: `HOST_PORT=5350` (Docker host port). Keep both inside 5350-5399.
+
 ## Words are not commitments, tools are
 
 The boundary is the tool set, not the wording. An agent can still say something misleading. The commitment ledger (what the company is bound to, written only by tools) sits next to the transcript (what was said) because the two can disagree. Run a governed `fee-waiver` with `"wording": "loose"` and the reply says the fee is "as good as gone" while the ledger stays empty: that is flagged `unbackedPromise` (a keyword heuristic, not a guarantee). The boundary stops the system from binding the company; it does not make the reply true. See [docs/safety.md](docs/safety.md).
