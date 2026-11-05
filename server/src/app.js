@@ -14,6 +14,7 @@ import { RunError, createRuntime } from './runtime.js';
 import { assertBindAllowed, bindHost, credentialGuard, hostGuard, originGuard, serverPort } from './safety.js';
 import { registryView } from './tools.js';
 import { WORKSPACE_HEADER, createWorkspaces, resolveWorkspaceId } from './workspaces.js';
+import { shelfInfo } from './shelfLink.js';
 
 export const DEFAULT_WEB_DIST = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/dist');
 // The built UI: same-origin scripts, styles, images and fetches only. style-src allows inline styles because React Flow sets them.
@@ -35,6 +36,7 @@ export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_
   app.use(originGuard);
   app.use((_req, res, next) => { res.set(API_HEADERS); next(); });
   if (webDist && fs.existsSync(path.join(webDist, 'index.html'))) {
+app.get('/api/shelf', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json(shelfInfo()); }); // the header "Shelf" button
     app.use(express.static(webDist, {
       index: 'index.html', dotfiles: 'ignore',
       setHeaders: (res) => res.set({ ...API_HEADERS, 'Content-Security-Policy': UI_CSP }),

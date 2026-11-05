@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import ShelfLink from "./components/ShelfLink.jsx";
 import * as api from "./lib/api.js";
 import Story from "./components/Story.jsx";
 import Column from "./components/Column.jsx";
@@ -115,6 +116,7 @@ export default function App() {
       <a className="skip" href="#main">Skip to content</a>
       <header className="top">
         <h1>No tool, no promise</h1>
+        <ShelfLink />
         <span className="mode" data-testid="mode-badge" title="Scripted agent, no model, no tenant, no network">{mode === "se-mock" ? "HOSTED SIMULATION: mock only" : "DEMO: mock only"}</span>
         <ModeToggle info={info} onSelect={onSelectMode} />
         <p className="tagline">The tool set is the authorization boundary.</p>
