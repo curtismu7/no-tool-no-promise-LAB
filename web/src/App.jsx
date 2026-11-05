@@ -9,6 +9,7 @@ import Audit from "./components/Audit.jsx";
 import Flow from "./components/Flow.jsx";
 import ModeBanner from "./components/ModeBanner.jsx";
 import ModeToggle from "./components/ModeToggle.jsx";
+import { workspaceId } from "./lib/workspace.js";
 
 const EMPTY_LEDGER = { count: 0, entries: [] };
 const EMPTY_REVIEWS = { reviews: [], approvals: [] };
@@ -116,7 +117,7 @@ export default function App() {
       <a className="skip" href="#main">Skip to content</a>
       <header className="top">
         <h1>No tool, no promise</h1>
-        <ShelfLink />
+        <ShelfLink headers={() => ({ "X-Workspace-Id": workspaceId() })} />
         <span className="mode" data-testid="mode-badge" title="Scripted agent, no model, no tenant, no network">{mode === "se-mock" ? "HOSTED SIMULATION: mock only" : "DEMO: mock only"}</span>
         <ModeToggle info={info} onSelect={onSelectMode} />
         <p className="tagline">The tool set is the authorization boundary.</p>
