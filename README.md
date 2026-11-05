@@ -4,7 +4,7 @@ Tier: Demo.
 
 A support chat agent is asked to waive a fee. If it has a tool that can waive fees, it can bind the company. If it has no such tool, it cannot, whatever it is told and whatever it says. This demo runs the same scripted agent twice, with two different tool sets, and shows what the company is actually committed to.
 
-Repo: https://github.com/ping-sandbox/no-tool-no-promise-LAB
+Repo: https://github.com/curtismu7/no-tool-no-promise-LAB
 
 - **Ungoverned**: the agent's tool set includes `waive_fee`, `issue_refund` and `change_terms`. A request, or an injected instruction, ends in a commitment on the ledger.
 - **Governed**: the tool set is the authorization boundary. The agent can look up policy, hand a request to a human (a review request that commits nothing) and ask for an approval (pending until a human decides; this demo has no approve step). No tool in its set can bind the company, so no run, scenario or request can create a commitment.
