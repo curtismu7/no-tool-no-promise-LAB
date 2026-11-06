@@ -15,8 +15,8 @@ const EMPTY_LEDGER = { count: 0, entries: [] };
 const EMPTY_REVIEWS = { reviews: [], approvals: [] };
 
 function initialTheme() {
-  try { const t = localStorage.getItem("ntnp-theme"); if (t === "dark" || t === "light") return t; } catch { /* blocked */ }
-  return globalThis.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light";
+  try { const t = localStorage.getItem("ntnp-theme"); if (t === "dark" || t === "light" || t === "auto") return t; } catch { /* blocked */ }
+  return "auto";
 }
 
 // Set at build time by the hosted image (docker build --build-arg VITE_NTNP_MODE=se-mock). Null for the local build.
@@ -53,7 +53,8 @@ export default function App() {
   const [mode, setMode] = useState(() => buildMode() ?? "local");
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
+    if (theme === "auto") delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = theme;
     try { localStorage.setItem("ntnp-theme", theme); } catch { /* blocked */ }
   }, [theme]);
 
@@ -121,9 +122,13 @@ export default function App() {
         <span className="mode" data-testid="mode-badge" title="Scripted agent, no model, no tenant, no network">{mode === "se-mock" ? "HOSTED SIMULATION: mock only" : "DEMO: mock only"}</span>
         <ModeToggle info={info} onSelect={onSelectMode} />
         <p className="tagline">The tool set is the authorization boundary.</p>
-        <button type="button" className="btn" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-pressed={theme === "dark"}>
-          {theme === "dark" ? "Light theme" : "Dark theme"}
-        </button>
+        <label className="inline">Theme
+          <select value={theme} onChange={(e) => setTheme(e.target.value)} data-testid="theme">
+            <option value="auto">Auto</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
         <button type="button" className="btn" onClick={() => setPresenting(!presenting)} aria-pressed={presenting}>Presenter mode</button>
       </header>
       <main id="main" className="page" tabIndex={-1}>

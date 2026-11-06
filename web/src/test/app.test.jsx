@@ -56,9 +56,10 @@ test("theme toggle switches data-theme", async () => {
   mockFetch();
   const user = userEvent.setup();
   render(<App />);
-  const before = document.documentElement.dataset.theme;
-  await user.click(screen.getByRole("button", { name: /theme/i }));
-  expect(document.documentElement.dataset.theme).not.toBe(before);
+  await user.selectOptions(screen.getByTestId("theme"), "dark");
+  expect(document.documentElement.dataset.theme).toBe("dark");
+  await user.selectOptions(screen.getByTestId("theme"), "auto");
+  expect(document.documentElement.dataset.theme).toBeUndefined();
 });
 
 test("a server failure is shown, not swallowed", async () => {
