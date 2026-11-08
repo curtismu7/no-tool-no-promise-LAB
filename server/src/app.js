@@ -29,7 +29,7 @@ const RUN_KEYS = new Set(['scenario', 'profile', 'wording', 'message']);
 
 // webDist: directory with the built UI (web/dist). null disables static serving.
 // mode: 'local' (default) or 'se-mock'. workspaceOptions: { max, ttlMs, now } for the se-mock registry (tests lower them).
-export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_WEB_DIST, mode = 'local', workspaceOptions = {}, realAvailable = false, customer = loadCustomer() } = {}) {
+export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_WEB_DIST, mode = 'local', workspaceOptions = {}, realAvailable = false, customer = loadCustomer(), env = process.env } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(hostGuard);
@@ -127,7 +127,7 @@ export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_
     console.error('[no-tool-no-promise] api error:', err.message);
     return res.status(500).json({ error: 'server_error' });
   });
-  app.get('/api/shelf', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json(shelfInfo()); }); // the header "Shelf" button
+  app.get('/api/shelf', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json(shelfInfo(env)); }); // the header "Shelf" button
   app.use('/api', api);
   app.use((_req, res) => bad(res, 'no such endpoint', 404));
   app.use((err, _req, res, _next) => (err instanceof URIError || err.status === 400 ? bad(res, 'malformed request') : res.status(500).json({ error: 'server_error' })));
@@ -140,7 +140,7 @@ export async function startHttpServer({ port = serverPort(), host = bindHost(), 
   const mode = assertModeAllowed(env);
   const health = createHealth({ env });
   return new Promise((resolve, reject) => {
-    const httpServer = createApp({ runtime, health, webDist, mode, workspaceOptions, realAvailable }).listen(port, host);
+    const httpServer = createApp({ runtime, health, webDist, mode, workspaceOptions, realAvailable, env }).listen(port, host);
     httpServer.once('error', (e) => { health.stop(); reject(e); });
     httpServer.once('listening', () => {
       const { port: bound } = httpServer.address();
