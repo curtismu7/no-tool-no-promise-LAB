@@ -11,7 +11,7 @@ import { assertModeAllowed } from './config.js';
 import { createHealth } from './health.js';
 import { loadCustomer, DEFAULT_CUSTOMER } from './customer.js';
 import { RunError, createRuntime } from './runtime.js';
-import { assertBindAllowed, bindHost, credentialGuard, hostGuard, originGuard, serverPort } from './safety.js';
+import { allowedHostsFrom, assertBindAllowed, bindHost, credentialGuard, makeHostGuard, makeOriginGuard, serverPort } from './safety.js';
 import { registryView } from './tools.js';
 import { WORKSPACE_HEADER, createWorkspaces, resolveWorkspaceId } from './workspaces.js';
 import { shelfInfo } from './shelfLink.js';
@@ -29,11 +29,11 @@ const RUN_KEYS = new Set(['scenario', 'profile', 'wording', 'message']);
 
 // webDist: directory with the built UI (web/dist). null disables static serving.
 // mode: 'local' (default) or 'se-mock'. workspaceOptions: { max, ttlMs, now } for the se-mock registry (tests lower them).
-export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_WEB_DIST, mode = 'local', workspaceOptions = {}, realAvailable = false, customer = loadCustomer(), env = process.env } = {}) {
+export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_WEB_DIST, mode = 'local', workspaceOptions = {}, realAvailable = false, customer = loadCustomer(), env = process.env, allowedHosts = new Set() } = {}) {
   const app = express();
   app.disable('x-powered-by');
-  app.use(hostGuard);
-  app.use(originGuard);
+  app.use(makeHostGuard(allowedHosts));
+  app.use(makeOriginGuard(allowedHosts));
   app.use((_req, res, next) => { res.set(API_HEADERS); next(); });
   if (webDist && fs.existsSync(path.join(webDist, 'index.html'))) {
     app.use(express.static(webDist, {
@@ -138,9 +138,10 @@ export function createApp({ runtime, health = createHealth(), webDist = DEFAULT_
 export async function startHttpServer({ port = serverPort(), host = bindHost(), env = process.env, runtime = createRuntime(), webDist = DEFAULT_WEB_DIST, workspaceOptions, realAvailable } = {}) {
   assertBindAllowed(host, env);
   const mode = assertModeAllowed(env);
+  const allowedHosts = allowedHostsFrom(env); // before the health timer starts: a bad name must leave nothing running
   const health = createHealth({ env });
   return new Promise((resolve, reject) => {
-    const httpServer = createApp({ runtime, health, webDist, mode, workspaceOptions, realAvailable, env }).listen(port, host);
+    const httpServer = createApp({ runtime, health, webDist, mode, workspaceOptions, realAvailable, env, allowedHosts }).listen(port, host);
     httpServer.once('error', (e) => { health.stop(); reject(e); });
     httpServer.once('listening', () => {
       const { port: bound } = httpServer.address();
