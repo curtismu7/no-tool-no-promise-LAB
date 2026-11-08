@@ -120,3 +120,13 @@ test('GET /api/reviews shows review requests and pending approvals, which commit
   assert.equal(q.approvals.length, 1); assert.equal(q.approvals[0].status, 'pending_human_approval');
   assert.equal((await get('/api/ledger')).json.count, 0);
 });
+
+test('GET /api/shelf returns SHELF_URL (slash trimmed) with no web build; POST is not 200', async () => {
+  const s = await startTestServer({ env: { SHELF_URL: 'https://shelf.example:8443/', HOME: '/nonexistent' }, webDist: null });
+  try {
+    const r = await request(s.port, 'GET', '/api/shelf');
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.json, { shelfUrl: 'https://shelf.example:8443' });
+    assert.notEqual((await request(s.port, 'POST', '/api/shelf', { body: {} })).status, 200);
+  } finally { await s.close(); }
+});
