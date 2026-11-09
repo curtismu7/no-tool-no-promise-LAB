@@ -132,7 +132,7 @@ try {
   await page.getByRole('button', { name: 'Run both' }).click();
   await page.getByTestId('ledger-entries').waitFor();
   await shot('light-1360');
-  await page.getByRole('button', { name: 'Dark theme' }).click();
+  await page.getByTestId('theme').selectOption('dark');
   check((await page.evaluate(() => document.documentElement.dataset.theme)) === 'dark', 'theme toggles to dark');
   await shot('dark-1360');
 
@@ -145,7 +145,7 @@ try {
   const nameBox = await page.locator('table.registry tbody th code').first().boundingBox();
   check(nameBox && nameBox.height < 30, `a tool name stays on one line at 390px (height ${nameBox?.height})`);
   await shot('dark-390');
-  await page.getByRole('button', { name: 'Light theme' }).click();
+  await page.getByTestId('theme').selectOption('light');
   await sleep(200);
   check((await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 0, 'no horizontal scroll at 390px, light');
   await shot('light-390');
