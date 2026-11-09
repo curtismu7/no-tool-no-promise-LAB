@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import ShelfLink from "./components/ShelfLink.jsx";
+// Opened from Customer Agent LAB (UC28 routes here): strip + header Back only, nothing preselected.
+import ReturnLink from "./return-link/ReturnLink.jsx";
 import * as api from "./lib/api.js";
 import Story from "./components/Story.jsx";
 import Column from "./components/Column.jsx";
@@ -118,6 +120,7 @@ export default function App() {
       <a className="skip" href="#main">Skip to content</a>
       <header className="top">
         <h1>No tool, no promise</h1>
+        <ReturnLink app="no-tool-no-promise" variant="header" />
         <ShelfLink headers={() => ({ "X-Workspace-Id": workspaceId() })} />
         <span className="mode" data-testid="mode-badge" title="Scripted agent, no model, no tenant, no network">{mode === "se-mock" ? "HOSTED SIMULATION: mock only" : "DEMO: mock only"}</span>
         <ModeToggle info={info} onSelect={onSelectMode} />
@@ -134,6 +137,7 @@ export default function App() {
       <main id="main" className="page" tabIndex={-1}>
         {/* Sticky: the banner stays on screen in every view, presenter mode included. */}
         <ModeBanner mode={mode} />
+        <ReturnLink app="no-tool-no-promise" />
         {!presenting && <Story />}
         {error && <p className="alert" role="alert">{error}</p>}
 
