@@ -73,3 +73,8 @@ describe("return link", () => {
     expect(returnLinkFor("no-tool-no-promise").href).toBe("http://127.0.0.1:5603/?returned=no-tool-no-promise&uc=UC28");
   });
 });
+
+  it("?from=ai-demo-standalone: strip names AI Demo Standalone, Back goes to /ai-demo-standalone/ under the proxy", () => {
+    window.history.replaceState(null, "", "/no-tool-no-promise/?from=ai-demo-standalone&uc=UC12");
+    expect(returnLinkFor("no-tool-no-promise").href).toBe("/ai-demo-standalone/?returned=no-tool-no-promise&uc=UC12");
+  });
