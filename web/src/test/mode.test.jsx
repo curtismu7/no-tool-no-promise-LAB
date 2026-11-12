@@ -86,15 +86,15 @@ test("presenter mode keeps the hosted banner and the run controls, and hides the
   render(<App />);
   await screen.findByTestId("mode-banner");
   expect(screen.getByRole("heading", { name: "Audit trail" })).toBeInTheDocument();
-  const toggle = screen.getByRole("button", { name: "Presenter mode" });
+  const toggle = screen.getByTestId("presenter");
   expect(toggle).toHaveAttribute("aria-pressed", "false");
   fireEvent.click(toggle);
-  expect(screen.getByRole("button", { name: "Presenter mode" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByTestId("presenter")).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByTestId("mode-banner")).toHaveTextContent("HOSTED SIMULATION");
   expect(screen.getByRole("button", { name: "Run both" })).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Audit trail" })).toBeNull();
   expect(screen.queryByRole("heading", { name: "Per-agent tool registry" })).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Presenter mode" }));
+  fireEvent.click(screen.getByTestId("presenter"));
   expect(screen.getByRole("heading", { name: "Audit trail" })).toBeInTheDocument();
 });
 
@@ -138,30 +138,31 @@ function toggleFetch(initial) {
 test("the header toggle: Mock pressed, Real disabled with the server's reason as its tooltip", async () => {
   toggleFetch(MOCK_INFO);
   render(<App />);
-  const real = await screen.findByTestId("mode-real");
-  await waitFor(() => expect(screen.getByTestId("mode-mock")).toHaveAttribute("aria-pressed", "true"));
-  expect(real.closest("header.top")).not.toBeNull();
-  expect(real).toHaveAttribute("aria-pressed", "false");
-  expect(real).toBeDisabled();
-  expect(real).toHaveAttribute("title", expect.stringMatching(/no live version/));
+  const select = await screen.findByTestId("mode-select");
+  await waitFor(() => expect(select).toHaveValue("mock"));
+  expect(select.closest("header.top")).not.toBeNull();
+  const realOption = select.querySelector('option[value="real"]');
+  expect(realOption).toBeTruthy();
+  expect(realOption.disabled).toBe(true);
+  expect(realOption.title).toMatch(/no live version|mock only by design/);
 });
 
 test("switching posts the mode, then loads the scenarios, tool registry, ledger, reviews and audit again; the pressed button follows", async () => {
   const calls = toggleFetch({ ...MOCK_INFO, source: "real", realAvailable: true, realReason: null });
   render(<App />);
-  await waitFor(() => expect(screen.getByTestId("mode-real")).toHaveAttribute("aria-pressed", "true"));
+  await waitFor(() => expect(screen.getByTestId("mode-select")).toHaveValue("real"));
   await screen.findByRole("radio", { name: "Fee waiver request" });
   const count = (u) => calls.filter((c) => c.method === "GET" && c.url.startsWith(u)).length;
   const before = { scenarios: count("/api/scenarios"), agents: count("/api/agents"), ledger: count("/api/ledger"), audit: count("/api/audit") };
-  fireEvent.click(screen.getByTestId("mode-mock"));
-  await waitFor(() => expect(screen.getByTestId("mode-mock")).toHaveAttribute("aria-pressed", "true"));
+  fireEvent.change(screen.getByTestId("mode-select"), { target: { value: "mock" } });
+  await waitFor(() => expect(screen.getByTestId("mode-select")).toHaveValue("mock"));
   expect(JSON.parse(calls.find((c) => c.url === "/api/mode").body)).toEqual({ source: "mock" });
   await waitFor(() => expect(count("/api/audit")).toBe(before.audit + 1));
   expect(count("/api/scenarios")).toBe(before.scenarios + 1);
   expect(count("/api/agents")).toBe(before.agents + 1);
   expect(count("/api/ledger")).toBe(before.ledger + 1);
-  fireEvent.click(screen.getByTestId("mode-real"));
-  await waitFor(() => expect(screen.getByTestId("mode-real")).toHaveAttribute("aria-pressed", "true"));
+  fireEvent.change(screen.getByTestId("mode-select"), { target: { value: "real" } });
+  await waitFor(() => expect(screen.getByTestId("mode-select")).toHaveValue("real"));
   await waitFor(() => expect(count("/api/ledger")).toBe(before.ledger + 2));
 });
 
@@ -170,8 +171,8 @@ test("a refused switch shows the server's message and leaves the pressed button 
   const inner = globalThis.fetch;
   globalThis.fetch = vi.fn(async (url, init) => (url === "/api/mode" ? { ok: false, status: 409, json: async () => ({ message: "Real mode is not available." }) } : inner(url, init)));
   render(<App />);
-  await waitFor(() => expect(screen.getByTestId("mode-real")).toBeEnabled());
-  fireEvent.click(screen.getByTestId("mode-real"));
+  await waitFor(() => { const o = screen.getByTestId("mode-select").querySelector('option[value="real"]'); expect(o.disabled).toBe(false); });
+  fireEvent.change(screen.getByTestId("mode-select"), { target: { value: "real" } });
   expect(await screen.findByRole("alert")).toHaveTextContent("Real mode is not available.");
-  expect(screen.getByTestId("mode-mock")).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByTestId("mode-select")).toHaveValue("mock");
 });

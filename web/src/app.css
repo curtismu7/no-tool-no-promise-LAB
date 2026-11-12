@@ -17,7 +17,8 @@ code, .mono { font-size: 0.85rem; overflow-wrap: anywhere; }
 .skip { position: absolute; left: 0.5rem; top: -4rem; z-index: 50; padding: 0.5rem 0.8rem; background: var(--accent); color: var(--on-accent); border-radius: 6px; }
 .skip:focus { top: 0.5rem; }
 
-.top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; margin: 0 -16px; padding: 0.7rem 16px; border-bottom: 2px solid var(--text); background: var(--surface); }
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; margin: 0 -16px; padding: 0.7rem 16px; border-bottom: 2px solid var(--text); background: var(--surface); position: relative; }
+html { font-size: var(--fs, 16px); }
 .tagline { margin: 0; flex: 1 1 14rem; font-weight: 700; color: var(--muted); }
 .mode { padding: 0.15rem 0.6rem; border-radius: 4px; font: 700 0.8rem var(--font-mono); letter-spacing: 0.08em; border: 2px solid var(--status-info); color: var(--status-info); background: var(--surface-2); }
 

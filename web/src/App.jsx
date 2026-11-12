@@ -10,8 +10,11 @@ import Risk from "./components/Risk.jsx";
 import Audit from "./components/Audit.jsx";
 import Flow from "./components/Flow.jsx";
 import ModeBanner from "./components/ModeBanner.jsx";
-import ModeToggle from "./components/ModeToggle.jsx";
+import TopMenu, { applyFontSize } from "./top-menu/TopMenu.jsx";
 import { workspaceId } from "./lib/workspace.js";
+
+import fs from "node:fs";
+const LAB_VERSION = (() => { try { return JSON.parse(fs.readFileSync(new URL("../../package.json", import.meta.url), "utf8")).version || null; } catch { return null; } })();
 
 const EMPTY_LEDGER = { count: 0, entries: [] };
 const EMPTY_REVIEWS = { reviews: [], approvals: [] };
@@ -39,6 +42,7 @@ async function readHealth(tries = 3) {
 export default function App() {
   const [info, setInfo] = useState(null);
   const [theme, setTheme] = useState(initialTheme);
+  const [fontStep, setFontStep] = useState(() => { try { const f = localStorage.getItem("ntnp.font"); return ["S", "M", "L"].includes(f) ? f : "M"; } catch { return "M"; } });
   const [presenting, setPresenting] = useState(false);
   const [scenarios, setScenarios] = useState([]);
   const [scenario, setScenario] = useState("fee-waiver");
@@ -59,6 +63,7 @@ export default function App() {
     else document.documentElement.dataset.theme = theme;
     try { localStorage.setItem("ntnp-theme", theme); } catch { /* blocked */ }
   }, [theme]);
+  useEffect(() => { applyFontSize(fontStep); try { localStorage.setItem("ntnp.font", fontStep); } catch { /* blocked */ } }, [fontStep]);
 
   const refresh = useCallback(async () => {
     const [l, r, a] = await Promise.all([api.getLedger(), api.getReviews(), api.getAudit()]);
@@ -123,16 +128,16 @@ export default function App() {
         <ReturnLink app="no-tool-no-promise" variant="header" />
         <ShelfLink headers={() => ({ "X-Workspace-Id": workspaceId() })} />
         <span className="mode" data-testid="mode-badge" title="Scripted agent, no model, no tenant, no network">{mode === "se-mock" ? "HOSTED SIMULATION: mock only" : "DEMO: mock only"}</span>
-        <ModeToggle info={info} onSelect={onSelectMode} />
+        <TopMenu
+          mode={{ value: info?.source === "real" ? "real" : "mock", onChange: onSelectMode, realAvailable: info ? info.realAvailable === true : null, realHint: info?.realReason }}
+          theme={{ value: theme, onChange: setTheme }}
+          fontSize={{ value: fontStep, onChange: setFontStep }}
+          present={{ active: presenting, onToggle: () => setPresenting((v) => !v), label: "Presenter mode" }}
+          help={{ href: "https://github.com/curtismu7/no-tool-no-promise-LAB#readme" }}
+          version={LAB_VERSION}
+          onReset={reset}
+        />
         <p className="tagline">The tool set is the authorization boundary.</p>
-        <label className="inline">Theme
-          <select value={theme} onChange={(e) => setTheme(e.target.value)} data-testid="theme">
-            <option value="auto">Auto</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
-        </label>
-        <button type="button" className="btn" onClick={() => setPresenting(!presenting)} aria-pressed={presenting}>Presenter mode</button>
       </header>
       <main id="main" className="page" tabIndex={-1}>
         {/* Sticky: the banner stays on screen in every view, presenter mode included. */}

@@ -56,9 +56,9 @@ test("theme toggle switches data-theme", async () => {
   mockFetch();
   const user = userEvent.setup();
   render(<App />);
-  await user.selectOptions(screen.getByTestId("theme"), "dark");
+  await user.selectOptions(screen.getByTestId("theme-select"), "dark");
   expect(document.documentElement.dataset.theme).toBe("dark");
-  await user.selectOptions(screen.getByTestId("theme"), "auto");
+  await user.selectOptions(screen.getByTestId("theme-select"), "auto");
   expect(document.documentElement.dataset.theme).toBeUndefined();
 });
 
@@ -75,7 +75,7 @@ test("Reset clears both runs from the page and says so", async () => {
   await screen.findByRole("radio", { name: "Fee waiver request" });
   await user.click(screen.getByRole("button", { name: "Run both" }));
   await screen.findByTestId("ledger-entries");
-  await user.click(screen.getByRole("button", { name: "Reset" }));
+  await user.click(screen.getByTestId("reset"));
   await waitFor(() => expect(screen.getAllByText("Pick a scenario and press Run both.")).toHaveLength(2));
   expect(screen.queryByTestId("ledger-entries")).toBeNull();
   expect(screen.getByTestId("run-status")).toHaveTextContent("Reset");
