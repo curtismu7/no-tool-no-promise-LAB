@@ -126,7 +126,7 @@ try {
   for (let i = 0; i < 80; i++) { await page.keyboard.press('Tab'); seen.add(await page.evaluate(() => document.activeElement?.closest('section,article,header')?.getAttribute('aria-labelledby') || document.activeElement?.closest('section,article,header')?.className || '')); }
   check(['pick-h', 'flow-h', 'aud-h'].every((h) => seen.has(h)), `Tab moves through the panels (${[...seen].join(', ')})`);
 
-  await page.getByRole('button', { name: 'Reset', exact: true }).click();
+  await page.getByRole('button', { name: 'Reset', exact: true }).last().click();
   await page.getByRole('radio', { name: TITLES['fee-waiver'] }).check();
   await page.getByLabel('Agent wording').selectOption('careful');
   await page.getByRole('button', { name: 'Run both' }).click();
