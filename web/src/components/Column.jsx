@@ -1,5 +1,6 @@
 import React from "react";
 import { Untrusted } from "./Untrusted.jsx";
+import Json from "./JsonPane.jsx";
 
 const DECISION = {
   allowed: ["allowed", "ok"],
@@ -52,8 +53,8 @@ export function Ledger({ run, ledger, profile }) {
           {mine.map((e) => (
             <li key={e.seq} className="entry">
               <span className="tag deny">BOUND</span> <code>cmt-{e.seq}</code> <code><Untrusted text={e.action} /></code>
-              <span className="small"> {Object.entries(e.details).map(([k, v]) => `${k}=${v}`).join(", ")}</span>
               <span className="small muted"> hash {e.hash.slice(0, 10)}</span>
+              <Json value={e.details} label="commitment details" testId={`commitment-${e.seq}`} hot={["amount", "fee_code", "term", "new_value"]} />
             </li>
           ))}
         </ul>

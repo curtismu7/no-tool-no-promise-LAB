@@ -1,10 +1,12 @@
 import React from "react";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import Column from "../components/Column.jsx";
 import Audit from "../components/Audit.jsx";
 import Risk from "../components/Risk.jsx";
 import Registry from "../components/Registry.jsx";
 import { Untrusted } from "../components/Untrusted.jsx";
+import { setJsonView } from "../components/JsonPane.jsx";
 import { buildSteps } from "../components/Flow.jsx";
 import { hasHidden, reveal } from "../lib/reveal.js";
 import { governedRun, ledger, registry, reviews, ungovernedRun } from "./fixtures.js";
@@ -15,6 +17,37 @@ test("ungoverned column shows a BOUND commitment and no empty-ledger message", (
   expect(screen.getByTestId("ledger-entries")).toHaveTextContent("cmt-0");
   expect(screen.queryByTestId("ledger-empty")).toBeNull();
   expect(screen.getByText("can bind the company")).toBeInTheDocument();
+});
+
+// The Form | JSON choice is module state shared by every pane, so each test sets the view it means.
+beforeEach(() => setJsonView("form"));
+
+const feeLedger = { count: 1, entries: [{ seq: 0, action: "waive_fee", details: { account_id: "ACC-1001", fee_code: "MAINT", amount: 12, reason: "customer request" }, hash: "b".repeat(64) }] };
+
+test("a commitment's details render through the shared JsonPane: Form by default, the exact JSON on the JSON button, the binding values marked", async () => {
+  render(<Column profile="ungoverned" agent={registry.agents[0]} run={ungovernedRun} ledger={feeLedger} reviews={{ reviews: [], approvals: [] }} />);
+  const box = screen.getByTestId("commitment-0-box");
+  expect(within(box).getByRole("button", { name: "Form" })).toHaveAttribute("aria-pressed", "true");
+  const pane = screen.getByTestId("commitment-0");
+  expect(pane).toHaveAttribute("aria-label", "commitment details");
+  expect(pane).toHaveTextContent("account_id");
+  expect(pane).toHaveTextContent("ACC-1001");
+  const hot = [...pane.querySelectorAll('[data-hot="true"] .jform__k')].map((n) => n.textContent);
+  expect(hot).toEqual(["fee_code", "amount"]);
+  await userEvent.click(within(box).getByRole("button", { name: "JSON" }));
+  expect(screen.getByTestId("commitment-0")).toHaveTextContent('"fee_code": "MAINT"');
+  expect(screen.getByTestId("commitment-0")).toHaveTextContent('"amount": 12');
+  expect(screen.getByTestId("ledger-entries").textContent).not.toMatch(/account_id=/);
+});
+
+test("hidden characters in a commitment's details are shown as [U+XXXX] in both views", async () => {
+  const sneaky = { count: 1, entries: [{ seq: 0, action: "waive_fee", details: { account_id: "ACC-1001", reason: "ok\u202Efdp.exe" }, hash: "c".repeat(64) }] };
+  render(<Column profile="ungoverned" agent={registry.agents[0]} run={ungovernedRun} ledger={sneaky} reviews={{ reviews: [], approvals: [] }} />);
+  expect(screen.getByTestId("commitment-0")).toHaveTextContent("[U+202E]");
+  expect(screen.getByTestId("commitment-0").textContent).not.toContain("\u202E");
+  await userEvent.click(screen.getByRole("button", { name: "JSON" }));
+  expect(screen.getByTestId("commitment-0")).toHaveTextContent("[U+202E]");
+  expect(screen.getByTestId("commitment-0").textContent).not.toContain("\u202E");
 });
 
 test("governed column shows an empty ledger, the handoff, and the said-not-bound flag", () => {
