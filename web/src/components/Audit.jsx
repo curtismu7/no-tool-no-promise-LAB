@@ -9,7 +9,7 @@ export default function Audit({ audit, verify, onVerify, busy }) {
     <div>
       <div className="row">
         <button type="button" className="btn" onClick={onVerify} disabled={busy}>Verify audit trail</button>
-        <span className="verify" role="status" aria-live="polite" data-testid="verify">
+        <span className="audit-verify" role="status" aria-live="polite" data-testid="verify">
           {verify ? (verify.audit.ok && verify.ledger.ok
             ? `Verified: audit chain ${verify.audit.count} entries, ledger chain ${verify.ledger.count} entries, hashes link.`
             : "Verification FAILED: a chain does not link.") : "Not verified yet."}
