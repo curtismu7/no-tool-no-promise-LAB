@@ -42,7 +42,7 @@ describe("return link", () => {
     const note = await screen.findByRole("note", NOTE);
     expect(note.textContent).toContain("UC28");
     expect(document.querySelector("main#main").firstElementChild).toBe(note);
-    expect(document.querySelector("header.top > button.return-link--header")).not.toBeNull();
+    expect(document.querySelector("header.shell-bar .shell-right button.return-link--header")).not.toBeNull();
     expect(screen.getAllByRole("button", { name: /Back to Customer Agent LAB/ })).toHaveLength(2);
   });
 

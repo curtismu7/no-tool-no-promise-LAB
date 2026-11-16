@@ -140,7 +140,7 @@ test("the header toggle: Mock pressed, Real disabled with the server's reason as
   render(<App />);
   const select = await screen.findByTestId("mode-select");
   await waitFor(() => expect(select).toHaveValue("mock"));
-  expect(select.closest("header.top")).not.toBeNull();
+  expect(select.closest("header.shell-bar")).not.toBeNull();
   const realOption = select.querySelector('option[value="real"]');
   expect(realOption).toBeTruthy();
   expect(realOption.disabled).toBe(true);
