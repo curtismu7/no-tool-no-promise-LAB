@@ -108,7 +108,7 @@ export default function Flow({ runs, theme }) {
             {SPEEDS.map(([v, t]) => <option key={v} value={v}>{t}</option>)}
           </select>
         </label>
-        <button type="button" className="btn primary" onClick={simulate} disabled={running}>Simulate</button>
+        <button type="button" className="btn" onClick={simulate} disabled={running}>Simulate</button>
         <button type="button" className="btn" onClick={reset}>Reset diagram</button>
         <span className="muted small">{run ? "Steps come from the last real run." : "No run yet, so the steps carry no numbers."} Drag any box.</span>
       </div>

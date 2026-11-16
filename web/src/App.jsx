@@ -123,11 +123,15 @@ export default function App() {
   return (
     <>
       <a className="skip" href="#main">Skip to content</a>
-      <header className="top">
-        <h1>No tool, no promise</h1>
-        <ReturnLink app="no-tool-no-promise" variant="header" />
-        <ShelfLink headers={() => ({ "X-Workspace-Id": workspaceId() })} />
-        <span className="mode" data-testid="mode-badge" title="Scripted agent, no model, no tenant, no network">{mode === "se-mock" ? "HOSTED SIMULATION: mock only" : "DEMO: mock only"}</span>
+      <header className="shell-bar">
+        <span className="shell-brand">
+          <span className="shell-logo" aria-hidden="true">NT</span>
+          <h1>No tool, no promise</h1>
+          <span className="shell-badge" data-testid="mode-badge" title="Scripted agent, no model, no tenant, no network">{mode === "se-mock" ? "HOSTED SIMULATION: mock only" : "DEMO: mock only"}</span>
+        </span>
+        <nav className="shell-nav" aria-label="Pages">
+          <a href="#main" aria-current="page">Tool boundary</a>
+        </nav>
         <TopMenu
           mode={{ value: info?.source === "real" ? "real" : "mock", onChange: onSelectMode, realAvailable: info ? info.realAvailable === true : null, realHint: info?.realReason }}
           theme={{ value: theme, onChange: setTheme }}
@@ -136,15 +140,18 @@ export default function App() {
           help={{ href: "https://github.com/curtismu7/no-tool-no-promise-LAB#readme" }}
           version={LAB_VERSION}
           onReset={reset}
-        />
-        <p className="tagline">The tool set is the authorization boundary.</p>
+        >
+          <ReturnLink app="no-tool-no-promise" variant="header" />
+          <ShelfLink headers={() => ({ "X-Workspace-Id": workspaceId() })} />
+        </TopMenu>
       </header>
       <main id="main" className="page" tabIndex={-1}>
         {/* Sticky: the banner stays on screen in every view, presenter mode included. */}
         <ModeBanner mode={mode} />
         <ReturnLink app="no-tool-no-promise" />
-        {!presenting && <Story />}
         {error && <p className="alert" role="alert">{error}</p>}
+        <p className="tagline">The tool set is the authorization boundary.</p>
+        {!presenting && <Story />}
 
         <section className="card picker" aria-labelledby="pick-h">
           <h2 id="pick-h">Scenario</h2>
