@@ -38,7 +38,8 @@ html { font-size: var(--fs, 16px); }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem; margin: 0.5rem 0; }
 .row label, .controls label { display: inline-flex; align-items: center; gap: 0.5rem; }
 .card { padding: 1rem; margin: 1rem 0; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
-.hosted { position: sticky; top: 0; z-index: 10; margin: 0.6rem 0; padding: 0.6rem 0.8rem; border-radius: 6px; border: 2px solid var(--status-info); background: var(--surface-2); color: var(--text); font-weight: 700; }
+/* Keeps the shared .banner on screen while the page scrolls; position only, the banner's colours come from standalone-ui.css. */
+.pin-top { position: sticky; top: 0; z-index: 10; }
 .alert { padding: 0.6rem 0.8rem; border-radius: 6px; background: var(--accent-soft); color: var(--danger-text); border: 1px solid var(--danger-text); }
 .status { min-height: 1.5rem; font-weight: 700; margin: 0; }
 .empty { text-align: center; padding: 2rem 0; }
