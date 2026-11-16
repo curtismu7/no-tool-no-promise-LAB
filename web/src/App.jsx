@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import ShelfLink from "./components/ShelfLink.jsx";
+import VerifyMark from "./components/VerifyMark.jsx";
 // Opened from Customer Agent LAB (UC28 routes here): strip + header Back only, nothing preselected.
 import ReturnLink from "./return-link/ReturnLink.jsx";
 import * as api from "./lib/api.js";
@@ -143,6 +144,7 @@ export default function App() {
         >
           <ReturnLink app="no-tool-no-promise" variant="header" />
           <ShelfLink headers={() => ({ "X-Workspace-Id": workspaceId() })} />
+          <VerifyMark id="no-tool-no-promise" headers={() => ({ "X-Workspace-Id": workspaceId() })} />
         </TopMenu>
       </header>
       <main id="main" className="page" tabIndex={-1}>

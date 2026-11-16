@@ -101,7 +101,7 @@ thead th { border-bottom: 2px solid var(--text); }
 .registry .absent { background: repeating-linear-gradient(135deg, var(--surface-2), var(--surface-2) 6px, transparent 6px, transparent 12px); color: var(--muted); }
 .registry .commit { background: var(--accent-soft); }
 .audit tr.denied td { background: var(--accent-soft); }
-.verify { font-weight: 700; }
+.audit-verify { font-weight: 700; }
 
 .flow-wrap { height: 26rem; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface); }
 .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; margin: 0.5rem 0; }
