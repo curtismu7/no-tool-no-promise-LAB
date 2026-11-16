@@ -35,13 +35,16 @@ describe("return link", () => {
     for (const [h, f] of pins) expect(createHash("sha256").update(fs.readFileSync(path.join(dir, f))).digest("hex"), f).toBe(h);
   });
 
-  it("?from=customer-agent: strip at the top of the page (no hosted banner locally), header Back in the header", async () => {
+  it("?from=customer-agent: the local Mock banner first, the strip right below it, header Back in the header", async () => {
     mockFetch("local");
     window.history.replaceState(null, "", "/?from=customer-agent&uc=UC28&vertical=banking");
     render(<App />);
     const note = await screen.findByRole("note", NOTE);
     expect(note.textContent).toContain("UC28");
-    expect(document.querySelector("main#main").firstElementChild).toBe(note);
+    const banner = screen.getByTestId("mode-banner");
+    expect(document.querySelector("main#main").firstElementChild).toBe(banner);
+    expect(banner).toHaveTextContent("MOCK MODE");
+    expect(banner.nextElementSibling).toBe(note);
     expect(document.querySelector("header.shell-bar .shell-right button.return-link--header")).not.toBeNull();
     expect(screen.getAllByRole("button", { name: /Back to Customer Agent LAB/ })).toHaveLength(2);
   });
@@ -50,7 +53,8 @@ describe("return link", () => {
     mockFetch("se-mock");
     window.history.replaceState(null, "", "/?from=customer-agent&uc=UC28");
     render(<App />);
-    const banner = await screen.findByTestId("mode-banner");
+    const banner = await screen.findByText(/^HOSTED SIMULATION\. /);
+    expect(banner).toBe(screen.getByTestId("mode-banner"));
     expect(banner.nextElementSibling).toBe(screen.getByRole("note", NOTE));
   });
 

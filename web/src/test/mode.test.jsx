@@ -1,7 +1,7 @@
 import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import App from "../App.jsx";
-import ModeBanner, { HOSTED_TEXT } from "../components/ModeBanner.jsx";
+import ModeBanner, { HOSTED_TEXT, LOCAL_TEXT } from "../components/ModeBanner.jsx";
 import { workspaceId } from "../lib/workspace.js";
 import { governedRun, ledger, registry, reviews, scenarios, ungovernedRun } from "./fixtures.js";
 
@@ -25,21 +25,31 @@ function mockFetch(mode) {
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 
-test("the banner is shown only for the hosted mock build, and says it is simulated", () => {
+test("the banner is shown in every mode: Mock mode locally, the hosted text in the hosted mock build; both say it is simulated", () => {
   const { rerender } = render(<ModeBanner mode="local" />);
-  expect(screen.queryByTestId("mode-banner")).toBeNull();
+  const local = screen.getByTestId("mode-banner");
+  expect(local).toHaveTextContent(LOCAL_TEXT);
+  expect(local).toHaveTextContent("MOCK MODE");
+  expect(local).toHaveTextContent("Everything shown is simulated");
+  expect(local).not.toHaveTextContent("HOSTED");
+  expect(local).toHaveClass("banner");
+  expect(local).toHaveAttribute("role", "note");
+  expect(local).not.toHaveAttribute("data-state");
   rerender(<ModeBanner mode="se-mock" />);
   const banner = screen.getByTestId("mode-banner");
   expect(banner).toHaveTextContent("HOSTED SIMULATION");
+  expect(banner).toHaveClass("banner");
+  expect(banner).not.toHaveAttribute("data-state");
   expect(banner).toHaveTextContent("Everything shown is simulated");
   expect(banner).toHaveAttribute("role", "note");
   expect(HOSTED_TEXT).toMatch(/private to this browser tab/);
 });
 
-test("the page shows the hosted banner and badge when health reports se-mock, and the local badge otherwise", async () => {
+test("the page shows the hosted banner and badge when health reports se-mock, and the local banner and badge otherwise", async () => {
   mockFetch("se-mock");
   const { unmount } = render(<App />);
-  await screen.findByTestId("mode-banner");
+  await screen.findByText(HOSTED_TEXT);
+  expect(document.querySelector("main#main").firstElementChild).toBe(screen.getByTestId("mode-banner"));
   expect(screen.getByTestId("mode-badge")).toHaveTextContent("HOSTED SIMULATION: mock only");
   expect(screen.getByRole("contentinfo")).toHaveTextContent("Hosted mock build");
   unmount();
@@ -47,7 +57,9 @@ test("the page shows the hosted banner and badge when health reports se-mock, an
   mockFetch("local");
   render(<App />);
   await screen.findByRole("radio", { name: "Fee waiver request" });
-  expect(screen.queryByTestId("mode-banner")).toBeNull();
+  expect(screen.getByTestId("mode-banner")).toHaveTextContent(LOCAL_TEXT);
+  expect(document.querySelector("header.shell-bar").nextElementSibling).toBe(document.querySelector("main#main"));
+  expect(document.querySelector("main#main").firstElementChild).toBe(screen.getByTestId("mode-banner"));
   expect(screen.getByTestId("mode-badge")).toHaveTextContent("DEMO: mock only");
 });
 
@@ -55,7 +67,7 @@ test("a build without the hosted mode stays in the local mode when health cannot
   mockFetch(null);
   render(<App />);
   await screen.findByRole("radio", { name: "Fee waiver request" });
-  expect(screen.queryByTestId("mode-banner")).toBeNull();
+  expect(screen.getByTestId("mode-banner")).toHaveTextContent(LOCAL_TEXT);
   expect(screen.getByTestId("mode-badge")).toHaveTextContent("DEMO: mock only");
 });
 
@@ -63,7 +75,7 @@ test("a hosted (se-mock) bundle shows the hosted banner and badge even when heal
   vi.stubEnv("VITE_NTNP_MODE", "se-mock");
   const calls = mockFetch(null);
   render(<App />);
-  await screen.findByTestId("mode-banner");
+  await screen.findByText(HOSTED_TEXT);
   expect(screen.getByTestId("mode-badge")).toHaveTextContent("HOSTED SIMULATION: mock only");
   expect(calls.some((c) => c.url === "/api/health")).toBe(false);
 });
@@ -71,7 +83,7 @@ test("a hosted (se-mock) bundle shows the hosted banner and badge even when heal
 test("every API call carries the tab's workspace id, a valid id that stays the same", async () => {
   const calls = mockFetch("se-mock");
   render(<App />);
-  await screen.findByTestId("mode-banner");
+  await screen.findByText(HOSTED_TEXT);
   const id = workspaceId();
   expect(id).toMatch(/^ws-[0-9a-f]{12}$/);
   expect(workspaceId()).toBe(id);
@@ -84,7 +96,7 @@ test("every API call carries the tab's workspace id, a valid id that stays the s
 test("presenter mode keeps the hosted banner and the run controls, and hides the reference sections", async () => {
   mockFetch("se-mock");
   render(<App />);
-  await screen.findByTestId("mode-banner");
+  await screen.findByText(HOSTED_TEXT);
   expect(screen.getByRole("heading", { name: "Audit trail" })).toBeInTheDocument();
   const toggle = screen.getByTestId("presenter");
   expect(toggle).toHaveAttribute("aria-pressed", "false");
@@ -107,7 +119,7 @@ test("one failed health read is retried, so the hosted banner still shows", asyn
     return inner(url, init);
   });
   render(<App />);
-  await screen.findByTestId("mode-banner", {}, { timeout: 3000 });
+  await screen.findByText(HOSTED_TEXT, {}, { timeout: 3000 });
   expect(healthReads).toBeGreaterThanOrEqual(2);
   expect(screen.getByTestId("mode-badge")).toHaveTextContent("HOSTED SIMULATION: mock only");
 });
