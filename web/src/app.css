@@ -4,7 +4,7 @@
 html { overflow-x: hidden; }
 body { background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 31px, var(--surface-2) 31px, var(--surface-2) 32px); background-attachment: local; }
 a, a:visited { color: var(--status-info); }
-.page { max-width: 1100px; margin: 0 auto; padding: 1rem 0 2rem; }
+.page { max-width: 2200px; margin: 0 auto; padding: 1rem 0 2rem; }
 .page:focus:not(:focus-visible) { outline: none; }
 h1 { margin: 0; font-size: 1.5rem; letter-spacing: 0.01em; }
 h2 { margin: 1.25rem 0 0.5rem; font-size: 1.35rem; }
