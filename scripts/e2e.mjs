@@ -103,6 +103,8 @@ try {
   // Diagram: Simulate and Reset.
   check((await page.locator('.react-flow__node').count()) === 7, 'diagram has seven boxes');
   const node = page.locator('.react-flow__node').first();
+  // On a wide frame the diagram scales up and the first box can sit below the fold; bring it into view so the drag stays inside the viewport.
+  await node.scrollIntoViewIfNeeded();
   const before = await node.boundingBox();
   await page.mouse.move(before.x + 20, before.y + 15); await page.mouse.down(); await page.mouse.move(before.x + 20, before.y + 95, { steps: 5 }); await page.mouse.up();
   const after = await node.boundingBox();
