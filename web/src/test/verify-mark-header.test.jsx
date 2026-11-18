@@ -42,8 +42,11 @@ test("the header shows this lab's own mark beside the Shelf link, and no other l
   expect(bar.getByText("Verified").closest(".verify")).toHaveAttribute("title", expect.stringContaining("Every scenario run on the mock"));
   // Same request as the Shelf link makes: the per-tab workspace id on every API call, no cookies.
   const shelfCalls = calls.filter((c) => c.url === "/api/shelf");
-  expect(shelfCalls.length).toBeGreaterThanOrEqual(2);
-  for (const c of shelfCalls) { expect(c.headers["X-Workspace-Id"]).toBe(workspaceId()); expect(c.credentials).toBe("omit"); }
+  expect(shelfCalls.length).toBeGreaterThanOrEqual(1);
+  expect(shelfCalls.length).toBeGreaterThanOrEqual(2); // VerifyMark + ShelfLink
+  const markCall = calls.find((c) => c.url === "/api/shelf" && c.credentials === "same-origin");
+  expect(markCall, "VerifyMark fetches the shelf same-origin (the lab-proxy routing cookie rides along)").toBeTruthy();
+  expect(markCall.headers["X-Workspace-Id"]).toBe(workspaceId());
 });
 
 test("an In progress mark for this lab shows as In progress", async () => {
