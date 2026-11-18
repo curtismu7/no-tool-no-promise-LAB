@@ -12,6 +12,8 @@ import Audit from "./components/Audit.jsx";
 import Flow from "./components/Flow.jsx";
 import ModeBanner from "./components/ModeBanner.jsx";
 import TopMenu, { applyFontSize } from "./top-menu/TopMenu.jsx";
+import TalkTrackDialog from "./talk-track/TalkTrackDialog.jsx";
+import talkMd from "../../docs/talk-track.md?raw";
 import { workspaceId } from "./lib/workspace.js";
 
 import fs from "node:fs";
@@ -45,6 +47,15 @@ export default function App() {
   const [theme, setTheme] = useState(initialTheme);
   const [fontStep, setFontStep] = useState(() => { try { const f = localStorage.getItem("ntnp.font"); return ["S", "M", "L"].includes(f) ? f : "M"; } catch { return "M"; } });
   const [presenting, setPresenting] = useState(false);
+  const [talkOpen, setTalkOpen] = useState(false);
+  const talkSteps = (() => {
+    const steps = []; let n = 0;
+    for (const line of talkMd.split("\n")) {
+      const m = line.match(/^\d+\.\s+\*\*(.+?)\.\*\*\s*(.*)$/);
+      if (m) { n += 1; steps.push({ id: `s${n}`, title: m[1], say: m[2] }); }
+    }
+    return steps.length ? steps : [{ id: "s1", title: "Talk track", say: talkMd.slice(0, 600) }];
+  })();
   const [scenarios, setScenarios] = useState([]);
   const [scenario, setScenario] = useState("fee-waiver");
   const [wording, setWording] = useState("careful");
@@ -138,6 +149,7 @@ export default function App() {
           theme={{ value: theme, onChange: setTheme }}
           fontSize={{ value: fontStep, onChange: setFontStep }}
           present={{ active: presenting, onToggle: () => setPresenting((v) => !v), label: "Presenter mode" }}
+          talkTrack={{ active: talkOpen, onToggle: () => setTalkOpen((v) => !v) }}
           help={{ href: "https://github.com/curtismu7/no-tool-no-promise-LAB#readme" }}
           version={LAB_VERSION}
           onReset={reset}
@@ -208,6 +220,8 @@ export default function App() {
         )}
         <footer className="small muted">{mode === "se-mock" ? "Hosted mock build. A deterministic scripted planner stands in for the agent; no tenant, no model and no outbound calls." : "Mock demo. A deterministic scripted planner stands in for the agent; nothing leaves this machine."}</footer>
       </main>
+      <TalkTrackDialog isOpen={talkOpen} onClose={() => setTalkOpen(false)} talk={talkSteps} />
+
     </>
   );
 }
