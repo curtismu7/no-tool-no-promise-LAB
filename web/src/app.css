@@ -38,6 +38,13 @@ html { font-size: var(--fs, 16px); }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem; margin: 0.5rem 0; }
 .row label, .controls label { display: inline-flex; align-items: center; gap: 0.5rem; }
 .card { padding: 1rem; margin: 1rem 0; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+
+.step-num { display: inline-grid; place-items: center; min-width: 1.4rem; height: 1.4rem; border-radius: 999px;
+  background: var(--accent-gradient); color: var(--on-accent); font: 700 0.75rem var(--font-mono);
+  margin-right: 0.5em; vertical-align: 2px; }
+h2[data-n]::before { content: attr(data-n); display: inline-grid; place-items: center; min-width: 1.4rem; height: 1.4rem;
+  border-radius: 999px; background: var(--accent-gradient); color: var(--on-accent); font: 700 0.75rem var(--font-mono);
+  margin-right: 0.5em; vertical-align: 2px; }
 /* Keeps the shared .banner on screen while the page scrolls; position only, the banner's colours come from standalone-ui.css. */
 .pin-top { position: sticky; top: 0; z-index: 10; }
 .alert { padding: 0.6rem 0.8rem; border-radius: 6px; background: var(--accent-soft); color: var(--danger-text); border: 1px solid var(--danger-text); }
