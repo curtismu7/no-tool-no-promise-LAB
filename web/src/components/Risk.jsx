@@ -3,7 +3,7 @@ import React from "react";
 export default function Risk() {
   return (
     <section className="risk" aria-labelledby="risk-h">
-      <h2 id="risk-h">Words are not commitments, tools are</h2>
+      <h2 id="risk-h" data-n="3">Words are not commitments, tools are</h2>
       <div className="two">
         <div>
           <h3>What the boundary does</h3>

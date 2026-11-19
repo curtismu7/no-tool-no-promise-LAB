@@ -168,7 +168,7 @@ export default function App() {
         {!presenting && <Story />}
 
         <section className="card picker" aria-labelledby="pick-h">
-          <h2 id="pick-h">Scenario</h2>
+          <h2 id="pick-h" data-n="1">Scenario</h2>
           <div className="radios" role="radiogroup" aria-label="Scenario">
             {scenarios.map((s) => (
               <label key={s.id} className={scenario === s.id ? "on" : ""}>
@@ -200,21 +200,21 @@ export default function App() {
 
         {!presenting && (
           <section className="card" aria-labelledby="reg-h">
-            <h2 id="reg-h">Per-agent tool registry</h2>
+            <h2 id="reg-h" data-n="4">Per-agent tool registry</h2>
             <Registry registry={registry} />
           </section>
         )}
 
         {!presenting && (
           <section aria-labelledby="flow-h">
-            <h2 id="flow-h">Where the boundary sits</h2>
+            <h2 id="flow-h" data-n="5">Where the boundary sits</h2>
             <Flow runs={runs} theme={theme} />
           </section>
         )}
 
         {!presenting && (
           <section className="card" aria-labelledby="aud-h">
-            <h2 id="aud-h">Audit trail</h2>
+            <h2 id="aud-h" data-n="6">Audit trail</h2>
             <Audit audit={audit} verify={verify} onVerify={doVerify} busy={busy} />
           </section>
         )}
